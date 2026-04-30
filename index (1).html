@@ -46,14 +46,12 @@
       min-height: 100vh;
     }
 
-    /* Layout */
     .app {
       display: grid;
       grid-template-columns: 240px 1fr;
       min-height: 100vh;
     }
 
-    /* Sidebar */
     .sidebar {
       background: var(--bg-sidebar);
       border-right: 0.5px solid var(--border);
@@ -65,10 +63,7 @@
       overflow: hidden;
     }
 
-    .sidebar-header {
-      padding: 20px 16px 12px;
-      border-bottom: 0.5px solid var(--border);
-    }
+    .sidebar-header { padding: 20px 16px 12px; border-bottom: 0.5px solid var(--border); }
 
     .sidebar-logo {
       font-size: 15px;
@@ -97,11 +92,7 @@
       padding: 12px 16px 6px;
     }
 
-    .history-list {
-      flex: 1;
-      overflow-y: auto;
-      padding-bottom: 16px;
-    }
+    .history-list { flex: 1; overflow-y: auto; padding-bottom: 16px; }
 
     .history-empty {
       padding: 20px 16px;
@@ -146,18 +137,9 @@
     }
     .del-btn:hover { color: var(--red); }
 
-    /* Main */
-    .main {
-      padding: 32px 40px;
-      max-width: 760px;
-    }
+    .main { padding: 32px 40px; max-width: 760px; }
 
-    .page-title {
-      font-size: 20px;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 24px;
-    }
+    .page-title { font-size: 20px; font-weight: 600; color: var(--text); margin-bottom: 24px; }
 
     .section-title {
       font-size: 10px;
@@ -170,11 +152,8 @@
 
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
     .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-
     .field { display: flex; flex-direction: column; gap: 4px; }
-
     label { font-size: 12px; color: var(--text-secondary); }
-
     .inp-wrap { position: relative; display: flex; align-items: center; }
 
     .inp-wrap input {
@@ -206,13 +185,8 @@
       pointer-events: none;
     }
 
-    .divider {
-      border: none;
-      border-top: 0.5px solid var(--border);
-      margin: 1.25rem 0;
-    }
+    .divider { border: none; border-top: 0.5px solid var(--border); margin: 1.25rem 0; }
 
-    /* Breakdown table */
     .breakdown {
       border: 0.5px solid var(--border);
       border-radius: var(--radius-lg);
@@ -236,7 +210,6 @@
     .brow .bv.neg { color: var(--red); }
     .brow .bv.pos { color: var(--green); }
 
-    /* Result cards */
     .results-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -244,30 +217,14 @@
       margin-bottom: 1.25rem;
     }
 
-    .card {
-      background: var(--bg-secondary);
-      border-radius: var(--radius);
-      padding: 12px 14px;
-    }
-
-    .card .clabel {
-      font-size: 11px;
-      color: var(--text-secondary);
-      margin-bottom: 4px;
-    }
-
-    .card .cval {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--text);
-    }
-
+    .card { background: var(--bg-secondary); border-radius: var(--radius); padding: 12px 14px; }
+    .card .clabel { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+    .card .cval { font-size: 18px; font-weight: 600; color: var(--text); }
     .card.big .cval { font-size: 22px; }
     .card .cval.green { color: var(--green); }
     .card .cval.red { color: var(--red); }
     .card .csub { font-size: 11px; color: var(--text-tertiary); margin-top: 3px; }
 
-    /* Actions */
     .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
     button.action-btn {
@@ -284,15 +241,9 @@
     }
 
     button.action-btn:hover { background: var(--bg-secondary); }
-
-    button.action-btn.primary {
-      border-color: var(--green);
-      color: var(--green);
-    }
-
+    button.action-btn.primary { border-color: var(--green); color: var(--green); }
     button.action-btn.primary:hover { background: var(--green-bg); }
 
-    /* Toast */
     .toast {
       position: fixed;
       bottom: 24px;
@@ -312,7 +263,6 @@
 
     .toast.show { opacity: 1; }
 
-    /* Responsive */
     @media (max-width: 700px) {
       .app { grid-template-columns: 1fr; }
       .sidebar { position: static; height: auto; max-height: 200px; }
@@ -329,92 +279,46 @@
 <body>
 
 <div class="app">
-
-  <!-- Sidebar -->
   <div class="sidebar">
     <div class="sidebar-header">
-      <div class="sidebar-logo">
-        Юнит-экономика <span class="pill">WB</span>
-      </div>
+      <div class="sidebar-logo">Юнит-экономика <span class="pill">WB</span></div>
     </div>
     <div class="sidebar-section-title">История расчётов</div>
     <div class="history-list" id="history-list">
-      <div class="history-empty" id="history-empty">
-        Сохранённых расчётов пока нет.<br>Нажмите «Сохранить» после расчёта.
-      </div>
+      <div class="history-empty" id="history-empty">Сохранённых расчётов пока нет.<br>Нажмите «Сохранить» после расчёта.</div>
     </div>
   </div>
 
-  <!-- Main -->
   <div class="main">
     <div class="page-title">Калькулятор юнит-экономики</div>
 
     <div class="section-title">Товар</div>
     <div class="grid2">
-      <div class="field">
-        <label>Название товара</label>
-        <div class="inp-wrap"><input type="text" id="product-name" class="no-unit" placeholder="Например: Колготки 40 den"></div>
-      </div>
-      <div class="field">
-        <label>Артикул WB</label>
-        <div class="inp-wrap"><input type="text" id="article" class="no-unit" placeholder="Например: 123456789"></div>
-      </div>
+      <div class="field"><label>Название товара</label><div class="inp-wrap"><input type="text" id="product-name" class="no-unit" placeholder="Например: Колготки 40 den"></div></div>
+      <div class="field"><label>Артикул WB</label><div class="inp-wrap"><input type="text" id="article" class="no-unit" placeholder="Например: 123456789"></div></div>
     </div>
 
     <div class="section-title">Цена</div>
     <div class="grid2">
-      <div class="field">
-        <label>Цена на сайте</label>
-        <div class="inp-wrap"><input type="number" id="price" value="1559" min="0"><span class="unit">₽</span></div>
-      </div>
-      <div class="field">
-        <label>СПП</label>
-        <div class="inp-wrap"><input type="number" id="spp" value="29" min="0" max="100" step="0.5"><span class="unit">%</span></div>
-      </div>
+      <div class="field"><label>Цена на сайте</label><div class="inp-wrap"><input type="number" id="price" value="1559" min="0"><span class="unit">₽</span></div></div>
+      <div class="field"><label>СПП</label><div class="inp-wrap"><input type="number" id="spp" value="29" min="0" max="100" step="0.5"><span class="unit">%</span></div></div>
     </div>
 
     <div class="section-title">Расходы</div>
     <div class="grid3">
-      <div class="field">
-        <label>Эквайринг</label>
-        <div class="inp-wrap"><input type="number" id="acquiring" value="0" min="0" max="100" step="0.1"><span class="unit">%</span></div>
-      </div>
-      <div class="field">
-        <label>Тарифные опции</label>
-        <div class="inp-wrap"><input type="number" id="tariff" value="0" min="0" max="100" step="0.1"><span class="unit">%</span></div>
-      </div>
-      <div class="field">
-        <label>Комиссия WB</label>
-        <div class="inp-wrap"><input type="number" id="commission" value="24.25" min="0" max="100" step="0.05"><span class="unit">%</span></div>
-      </div>
+      <div class="field"><label>Эквайринг</label><div class="inp-wrap"><input type="number" id="acquiring" value="0" min="0" max="100" step="0.1"><span class="unit">%</span></div></div>
+      <div class="field"><label>Тарифные опции</label><div class="inp-wrap"><input type="number" id="tariff" value="0" min="0" max="100" step="0.1"><span class="unit">%</span></div></div>
+      <div class="field"><label>Комиссия WB</label><div class="inp-wrap"><input type="number" id="commission" value="24.25" min="0" max="100" step="0.05"><span class="unit">%</span></div></div>
     </div>
     <div class="grid3">
-      <div class="field">
-        <label>Логистика на 1 ед</label>
-        <div class="inp-wrap"><input type="number" id="logistics" value="84" min="0"><span class="unit">₽</span></div>
-      </div>
-      <div class="field">
-        <label>Процент выкупа</label>
-        <div class="inp-wrap"><input type="number" id="buyout" value="89" min="1" max="100"><span class="unit">%</span></div>
-      </div>
-      <div class="field">
-        <label>Себестоимость</label>
-        <div class="inp-wrap"><input type="number" id="cogs" value="410" min="0"><span class="unit">₽</span></div>
-      </div>
+      <div class="field"><label>Логистика на 1 ед</label><div class="inp-wrap"><input type="number" id="logistics" value="84" min="0"><span class="unit">₽</span></div></div>
+      <div class="field"><label>Процент выкупа</label><div class="inp-wrap"><input type="number" id="buyout" value="89" min="1" max="100"><span class="unit">%</span></div></div>
+      <div class="field"><label>Себестоимость</label><div class="inp-wrap"><input type="number" id="cogs" value="410" min="0"><span class="unit">₽</span></div></div>
     </div>
     <div class="grid3">
-      <div class="field">
-        <label>CPO (реклама)</label>
-        <div class="inp-wrap"><input type="number" id="cpo" value="233.9" min="0"><span class="unit">₽</span></div>
-      </div>
-      <div class="field">
-        <label>Хранение на 1 ед</label>
-        <div class="inp-wrap"><input type="number" id="storage" value="16.1" min="0"><span class="unit">₽</span></div>
-      </div>
-      <div class="field">
-        <label>Налоговая ставка</label>
-        <div class="inp-wrap"><input type="number" id="tax" value="7" min="0" max="100" step="0.5"><span class="unit">%</span></div>
-      </div>
+      <div class="field"><label>CPO (реклама)</label><div class="inp-wrap"><input type="number" id="cpo" value="233.9" min="0"><span class="unit">₽</span></div></div>
+      <div class="field"><label>Хранение на 1 ед</label><div class="inp-wrap"><input type="number" id="storage" value="16.1" min="0"><span class="unit">₽</span></div></div>
+      <div class="field"><label>Налоговая ставка</label><div class="inp-wrap"><input type="number" id="tax" value="7" min="0" max="100" step="0.5"><span class="unit">%</span></div></div>
     </div>
 
     <div class="divider"></div>
@@ -435,23 +339,10 @@
     </div>
 
     <div class="results-grid">
-      <div class="card big">
-        <div class="clabel">Маржа на 1 ед</div>
-        <div class="cval" id="out-margin">—</div>
-      </div>
-      <div class="card">
-        <div class="clabel">ROI</div>
-        <div class="cval" id="out-roi">—</div>
-      </div>
-      <div class="card">
-        <div class="clabel">Маржинальность</div>
-        <div class="cval" id="out-marg-pct">—</div>
-      </div>
-      <div class="card">
-        <div class="clabel">Цена после СПП</div>
-        <div class="cval" id="out-price-spp">—</div>
-        <div class="csub" id="out-commission">комиссия —</div>
-      </div>
+      <div class="card big"><div class="clabel">Маржа на 1 ед</div><div class="cval" id="out-margin">—</div></div>
+      <div class="card"><div class="clabel">ROI</div><div class="cval" id="out-roi">—</div></div>
+      <div class="card"><div class="clabel">Маржинальность</div><div class="cval" id="out-marg-pct">—</div></div>
+      <div class="card"><div class="clabel">Цена после СПП</div><div class="cval" id="out-price-spp">—</div><div class="csub" id="out-commission">комиссия —</div></div>
     </div>
 
     <div class="actions">
@@ -472,15 +363,12 @@
   let history = [];
   let activeId = null;
 
-  function fmt(n) {
-    return n.toLocaleString('ru-RU', {minimumFractionDigits:1, maximumFractionDigits:1});
-  }
+  function fmt(n) { return n.toLocaleString('ru-RU', {minimumFractionDigits:1, maximumFractionDigits:1}); }
   function fmtPct(n) { return n.toFixed(2) + '%'; }
 
   function showToast(msg) {
     const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
+    t.textContent = msg; t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2400);
   }
 
@@ -495,10 +383,10 @@
   function compute(v) {
     const priceSPP   = v.price * (1 - v.spp / 100);
     const acquiring  = v.price * (v.acquiring / 100);
+    const tariff     = v.price * (v.tariff / 100);
     const commission = v.price * (v.commission / 100);
     const cps        = v.buyout > 0 ? v.cpo / (v.buyout / 100) : 0;
     const tax        = priceSPP * (v.tax / 100);
-    const tariff     = v.price * (v.tariff / 100);
     const margin     = v.price - acquiring - tariff - commission - v.logistics - v.cogs - cps - v.storage - tax;
     const roi        = v.cogs > 0 ? (margin / v.cogs) * 100 : 0;
     const marginPct  = priceSPP > 0 ? (margin / priceSPP) * 100 : 0;
@@ -509,7 +397,7 @@
     const v = getValues();
     const r = compute(v);
     const isProfit = r.margin >= 0;
-    const cls   = isProfit ? 'pos' : 'neg';
+    const cls = isProfit ? 'pos' : 'neg';
     const uiCls = isProfit ? 'green' : 'red';
 
     document.getElementById('r-price').textContent      = fmt(v.price) + ' ₽';
@@ -527,18 +415,12 @@
     mEl.textContent = fmt(r.margin) + ' ₽';
     mEl.className = 'bv ' + cls;
 
-    const outM = document.getElementById('out-margin');
-    outM.textContent = fmt(r.margin) + ' ₽';
-    outM.className = 'cval ' + uiCls;
-
-    const outRoi = document.getElementById('out-roi');
-    outRoi.textContent = fmtPct(r.roi);
-    outRoi.className = 'cval ' + uiCls;
-
-    const outMp = document.getElementById('out-marg-pct');
-    outMp.textContent = fmtPct(r.marginPct);
-    outMp.className = 'cval ' + uiCls;
-
+    document.getElementById('out-margin').textContent = fmt(r.margin) + ' ₽';
+    document.getElementById('out-margin').className = 'cval ' + uiCls;
+    document.getElementById('out-roi').textContent = fmtPct(r.roi);
+    document.getElementById('out-roi').className = 'cval ' + uiCls;
+    document.getElementById('out-marg-pct').textContent = fmtPct(r.marginPct);
+    document.getElementById('out-marg-pct').className = 'cval ' + uiCls;
     document.getElementById('out-price-spp').textContent = fmt(r.priceSPP) + ' ₽';
     document.getElementById('out-commission').textContent = 'комиссия ' + fmt(r.commission) + ' ₽';
   }
@@ -548,151 +430,63 @@
     const r = compute(v);
     const id = Date.now();
     const label = v.name || (v.article ? 'Арт. ' + v.article : 'Расчёт');
-    const entry = {
-      id, label,
-      article: v.article,
-      margin: r.margin,
-      roi: r.roi,
-      marginPct: r.marginPct,
-      values: v,
-      ts: new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'})
-    };
-    history.unshift(entry);
+    history.unshift({ id, label, article: v.article, margin: r.margin, roi: r.roi, marginPct: r.marginPct, values: v, ts: new Date().toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'}) });
     activeId = id;
     renderHistory();
     showToast('Сохранено: ' + label);
   }
 
   function renderHistory() {
-    const list  = document.getElementById('history-list');
+    const list = document.getElementById('history-list');
     const empty = document.getElementById('history-empty');
-
-    if (history.length === 0) {
-      list.innerHTML = '';
-      list.appendChild(empty);
-      empty.style.display = 'block';
-      return;
-    }
-
+    if (history.length === 0) { list.innerHTML = ''; list.appendChild(empty); empty.style.display = 'block'; return; }
     list.innerHTML = '';
     history.forEach(e => {
-      const isProfit = e.margin >= 0;
       const div = document.createElement('div');
       div.className = 'history-item' + (e.id === activeId ? ' active' : '');
-      div.innerHTML = `
-        <div class="hi-row">
-          <div class="hi-name">${e.label}</div>
-          <button class="del-btn" data-id="${e.id}">✕</button>
-        </div>
-        <div class="hi-meta">${e.article ? 'Арт. ' + e.article + ' · ' : ''}${e.ts}</div>
-        <div class="hi-margin ${isProfit ? 'green' : 'red'}">${fmt(e.margin)} ₽ · ROI ${e.roi.toFixed(1)}%</div>
-      `;
-      div.querySelector('.del-btn').addEventListener('click', ev => {
-        ev.stopPropagation();
-        deleteEntry(e.id);
-      });
-      div.addEventListener('click', () => loadEntry(e.id));
+      div.innerHTML = `<div class="hi-row"><div class="hi-name">${e.label}</div><button class="del-btn" data-id="${e.id}">✕</button></div><div class="hi-meta">${e.article ? 'Арт. ' + e.article + ' · ' : ''}${e.ts}</div><div class="hi-margin ${e.margin >= 0 ? 'green' : 'red'}">${fmt(e.margin)} ₽ · ROI ${e.roi.toFixed(1)}%</div>`;
+      div.querySelector('.del-btn').addEventListener('click', ev => { ev.stopPropagation(); history = history.filter(x => x.id !== e.id); if (activeId === e.id) activeId = null; renderHistory(); });
+      div.addEventListener('click', () => { activeId = e.id; const v = e.values; document.getElementById('product-name').value = v.name||''; document.getElementById('article').value = v.article||''; FIELDS.forEach(k => { const el = document.getElementById(k); if (el) el.value = v[k]??0; }); calc(); renderHistory(); });
       list.appendChild(div);
     });
-  }
-
-  function loadEntry(id) {
-    const e = history.find(x => x.id === id);
-    if (!e) return;
-    activeId = id;
-    const v = e.values;
-    document.getElementById('product-name').value = v.name || '';
-    document.getElementById('article').value = v.article || '';
-    FIELDS.forEach(k => {
-      const el = document.getElementById(k);
-      if (el) el.value = v[k] ?? 0;
-    });
-    calc();
-    renderHistory();
-    window.scrollTo({top: 0, behavior: 'smooth'});
-  }
-
-  function deleteEntry(id) {
-    history = history.filter(x => x.id !== id);
-    if (activeId === id) activeId = null;
-    renderHistory();
   }
 
   function shareCalc() {
     const v = getValues();
     const params = new URLSearchParams();
-    if (v.name)    params.set('name', v.name);
+    if (v.name) params.set('name', v.name);
     if (v.article) params.set('article', v.article);
     FIELDS.forEach(k => params.set(k, v[k]));
     const url = window.location.origin + window.location.pathname + '?' + params.toString();
-    navigator.clipboard.writeText(url)
-      .then(() => showToast('Ссылка скопирована!'))
-      .catch(() => {
-        prompt('Скопируйте ссылку:', url);
-      });
+    navigator.clipboard.writeText(url).then(() => showToast('Ссылка скопирована!')).catch(() => prompt('Скопируйте ссылку:', url));
   }
 
   function exportCSV() {
-    const v = getValues();
-    const r = compute(v);
-    const rows = [
-      ['Параметр', 'Значение'],
-      ['Название товара', v.name || '—'],
-      ['Артикул WB', v.article || '—'],
-      ['Цена на сайте', v.price],
-      ['СПП %', v.spp],
-      ['Эквайринг %', v.acquiring],
-      ['Тарифные опции %', v.tariff],
-      ['Комиссия WB %', v.commission],
-      ['Логистика', v.logistics],
-      ['Процент выкупа', v.buyout],
-      ['Себестоимость', v.cogs],
-      ['CPO', v.cpo],
-      ['Хранение', v.storage],
-      ['Налог %', v.tax],
-      ['---', '---'],
-      ['Маржа на 1 ед', fmt(r.margin) + ' ₽'],
-      ['ROI', fmtPct(r.roi)],
-      ['Маржинальность', fmtPct(r.marginPct)],
-    ];
-    const csv = rows.map(row => row.join(',')).join('\n');
+    const v = getValues(); const r = compute(v);
+    const rows = [['Параметр','Значение'],['Название товара',v.name||'—'],['Артикул WB',v.article||'—'],['Цена на сайте',v.price],['СПП %',v.spp],['Эквайринг %',v.acquiring],['Тарифные опции %',v.tariff],['Комиссия WB %',v.commission],['Логистика',v.logistics],['Процент выкупа',v.buyout],['Себестоимость',v.cogs],['CPO',v.cpo],['Хранение',v.storage],['Налог %',v.tax],['---','---'],['Маржа на 1 ед',fmt(r.margin)+' ₽'],['ROI',fmtPct(r.roi)],['Маржинальность',fmtPct(r.marginPct)]];
     const a = document.createElement('a');
-    const fn = v.article ? `wb_${v.article}.csv` : v.name ? `wb_${v.name}.csv` : 'wb_unit_economics.csv';
-    a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
-    a.download = fn;
+    a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(rows.map(r=>r.join(',')).join('\n'));
+    a.download = v.article ? `wb_${v.article}.csv` : v.name ? `wb_${v.name}.csv` : 'wb_unit_economics.csv';
     a.click();
   }
 
   function resetAll() {
     document.getElementById('product-name').value = '';
     document.getElementById('article').value = '';
-    Object.entries(DEFAULTS).forEach(([k, v]) => {
-      const el = document.getElementById(k);
-      if (el) el.value = v;
-    });
-    activeId = null;
-    renderHistory();
-    calc();
+    Object.entries(DEFAULTS).forEach(([k,v]) => { const el = document.getElementById(k); if (el) el.value = v; });
+    activeId = null; renderHistory(); calc();
   }
 
-  function loadFromURL() {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      if (!params.has('price')) return;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('price')) {
       document.getElementById('product-name').value = params.get('name') || '';
       document.getElementById('article').value = params.get('article') || '';
-      FIELDS.forEach(k => {
-        const val = params.get(k);
-        if (val !== null) {
-          const el = document.getElementById(k);
-          if (el) el.value = val;
-        }
-      });
-    } catch (e) {}
-  }
+      FIELDS.forEach(k => { const val = params.get(k); if (val !== null) { const el = document.getElementById(k); if (el) el.value = val; } });
+    }
+  } catch(e) {}
 
   document.querySelectorAll('input[type="number"]').forEach(el => el.addEventListener('input', calc));
-  loadFromURL();
   calc();
   renderHistory();
 </script>
