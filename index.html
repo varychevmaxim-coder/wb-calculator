@@ -425,9 +425,38 @@ function shareCalc() {
 
 function exportCSV() {
   const v = getValues(); const r = compute(v);
-  const rows = [['Параметр','Значение'],['Название',v.name||'—'],['Артикул',v.article||'—'],['Категория',v.category||'—'],['Цена',v.price],['СПП %',v.spp],['Эквайринг %',v.acquiring],['Тарифные опции %',v.tariff],['Комиссия WB %',v.commission],['Логистика',v.logistics],['Процент выкупа',v.buyout],['Себестоимость',v.cogs],['ДРР %',v.cpo],['Хранение',v.storage],['Налог %',v.tax],['---','---'],['Маржа',fmt(r.margin)+' ₽'],['ROI',fmtPct(r.roi)],['Маржинальность',fmtPct(r.marginPct)]];
+  // Header row
+  const headers = [
+    'Название','Артикул','Категория',
+    'Цена','Размер СПП, %','Цена после СПП',
+    'Комиссия WB, %','Комиссия на 1 ед',
+    'Логистика на 1 ед','Процент выкупа, %',
+    'Себестоимость','ДРР, %','ДРР на 1 ед',
+    'Хранение на 1 ед','Эквайринг, %','Эквайринг на 1 ед',
+    'Тарифные опции, %','Тарифные опции на 1 ед',
+    'Налог, %','Налог на 1 ед',
+    'Маржа на 1 ед','ROI, %','Маржинальность, %'
+  ];
+  const acquiring1 = v.price * (v.acquiring / 100);
+  const tariff1    = v.price * (v.tariff / 100);
+  const drr1       = v.price * (v.cpo / 100);
+  const row = [
+    v.name||'—', v.article||'—', v.category||'—',
+    v.price, v.spp, r.priceSPP.toFixed(1),
+    v.commission, r.commission.toFixed(1),
+    v.logistics, v.buyout,
+    v.cogs, v.cpo, drr1.toFixed(1),
+    v.storage, v.acquiring, acquiring1.toFixed(1),
+    v.tariff, tariff1.toFixed(1),
+    v.tax, r.tax.toFixed(1),
+    r.margin.toFixed(1), r.roi.toFixed(2), r.marginPct.toFixed(2)
+  ];
+  const csv = [headers, row].map(r => r.map(c => {
+    const s = String(c);
+    return s.includes(',') ? '"' + s + '"' : s;
+  }).join(';')).join('\n');
   const a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(rows.map(r=>r.join(',')).join('\n'));
+  a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
   a.download = v.article ? 'wb_'+v.article+'.csv' : v.name ? 'wb_'+v.name+'.csv' : 'wb_unit_economics.csv';
   a.click();
 }
