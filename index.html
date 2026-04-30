@@ -635,15 +635,14 @@ calc();
 renderHistory();
 
 // ---- Splash ----
-(function() {
+document.addEventListener('DOMContentLoaded', function() {
   const STORAGE_KEY = 'wb_subscribed';
   const splash = document.getElementById('splash');
-
-  // If already seen splash before — skip it
+  if (!splash) return;
   if (localStorage.getItem(STORAGE_KEY) === '1') {
     splash.classList.add('hidden');
   }
-})();
+});
 
 function goToChannel() {
   window.open('https://t.me/torgovie_zametki', '_blank');
