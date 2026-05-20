@@ -28,6 +28,11 @@
     .sidebar-logo { font-size: 14px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
     .sidebar-logo .pill { font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; background: var(--green-bg); color: var(--green); }
     .sidebar-section-title { font-size: 10px; font-weight: 500; color: var(--text-tertiary); letter-spacing: .07em; text-transform: uppercase; padding: 12px 16px 6px; }
+    .history-search-wrap { padding: 8px 12px 4px; border-bottom: 0.5px solid var(--border); }
+    .history-search { width: 100%; height: 30px; padding: 0 9px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); background: var(--bg); color: var(--text); font-size: 12px; font-family: inherit; }
+    .history-search:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(59,109,17,.1); }
+    .history-search::placeholder { color: var(--text-tertiary); }
+    .history-no-results { padding: 16px; font-size: 12px; color: var(--text-tertiary); text-align: center; }
     .history-list { flex: 1; overflow-y: auto; padding-bottom: 16px; }
     .history-empty { padding: 20px 16px; font-size: 12px; color: var(--text-tertiary); text-align: center; line-height: 1.6; }
     .history-item { padding: 10px 16px; cursor: pointer; border-bottom: 0.5px solid var(--border); transition: background .12s; }
@@ -69,6 +74,19 @@
     .cat-item:hover { background: var(--bg-secondary); }
     .cat-item-name { font-size: 12px; color: var(--text); font-weight: 500; }
     .cat-item-sub { font-size: 10px; color: var(--text-tertiary); margin-top: 1px; }
+
+    /* ROI target and DRR toggle */
+    .toggle-row { display: flex; gap: 6px; margin-bottom: 4px; }
+    .toggle-btn { height: 26px; padding: 0 10px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); background: transparent; color: var(--text-secondary); font-size: 11px; font-family: inherit; cursor: pointer; transition: all .15s; white-space: nowrap; }
+    .toggle-btn.active { background: var(--green); border-color: var(--green); color: white; }
+    .roi-target-box { background: var(--bg-secondary); border-radius: var(--radius); padding: 10px 12px; margin-top: 16px; }
+    .roi-target-title { font-size: 10px; font-weight: 500; color: var(--text-tertiary); letter-spacing: .07em; text-transform: uppercase; margin-bottom: 8px; }
+    .roi-target-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .roi-target-row label { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+    .roi-target-result { font-size: 13px; color: var(--text); }
+    .roi-target-result strong { color: var(--green); font-size: 15px; }
+    .roi-target-result.no-data { color: var(--text-tertiary); font-size: 12px; }
+
     /* Logistics button */
     .logistics-btn { height: 28px; padding: 0 10px; border: 0.5px solid var(--green); border-radius: var(--radius); background: transparent; color: var(--green); font-size: 11px; font-family: inherit; cursor: pointer; white-space: nowrap; }
     .logistics-btn:hover { background: var(--green-bg); }
@@ -149,6 +167,9 @@
   <div class="sidebar">
     <div class="sidebar-header"><div class="sidebar-logo">Юнит-экономика <span class="pill">WB</span></div></div>
     <div class="sidebar-section-title">История расчётов</div>
+    <div class="history-search-wrap">
+      <input type="text" class="history-search" id="history-search" placeholder="Поиск по названию, артикулу, ROI…" oninput="renderHistory()">
+    </div>
     <div class="history-list" id="history-list">
       <div class="history-empty" id="history-empty">Сохранённых расчётов пока нет.<br>Нажмите «Сохранить».</div>
     </div>
@@ -187,7 +208,7 @@
         <div class="grid3">
           <div class="field"><label>Эквайринг</label><div class="inp-wrap"><input type="number" id="acquiring" value="" min="0" max="100" step="0.1" placeholder="0"><span class="unit">%</span></div></div>
           <div class="field"><label>Тарифные опции</label><div class="inp-wrap"><input type="number" id="tariff" value="" min="0" max="100" step="0.1" placeholder="0"><span class="unit">%</span></div></div>
-          <div class="field"><label>Процент выкупа</label><div class="inp-wrap"><input type="number" id="buyout" value="" min="1" max="100" placeholder="0"><span class="unit">%</span></div></div>
+          <div class="field"><label>Процент выкупа</label><div class="inp-wrap"><input type="number" id="buyout" value="" min="1" max="100" placeholder="0" onblur="let v=parseFloat(this.value);if(isNaN(v)||v<1)this.value=1;else if(v>100)this.value=100;" onkeydown="if(event.key==='Enter'){let v=parseFloat(this.value);if(isNaN(v)||v<1)this.value=1;else if(v>100)this.value=100;}"><span class="unit">%</span></div></div>
         </div>
         <div class="grid3">
           <div class="field">
@@ -199,12 +220,24 @@
             <div class="logistics-applied" id="logistics-applied"></div>
           </div>
           <div class="field"><label>Себестоимость</label><div class="inp-wrap"><input type="number" id="cogs" value="" min="0" placeholder="0"><span class="unit">₽</span></div></div>
-          <div class="field"><label>ДРР, %</label><div class="inp-wrap"><input type="number" id="cpo" value="" min="0" max="100" step="0.1" placeholder="0"><span class="unit">%</span></div></div>
-        </div>
-        <div class="grid3">
           <div class="field"><label>Хранение на 1 ед</label><div class="inp-wrap"><input type="number" id="storage" value="" min="0" placeholder="0"><span class="unit">₽</span></div></div>
-          <div class="field"><label>Итоговая налоговая ставка</label><div class="inp-wrap"><input type="number" id="tax" value="" min="0" max="100" step="0.5" placeholder="0"><span class="unit">%</span></div></div>
-          <div class="field"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <div class="field" style="flex:1">
+            <div class="toggle-row">
+              <button class="toggle-btn active" id="drr-pct-btn" onclick="setDrrMode('pct')">ДРР, %</button>
+              <button class="toggle-btn" id="drr-rub-btn" onclick="setDrrMode('rub')">СРО (стоимость заказа)</button>
+            </div>
+            <div class="inp-wrap" id="drr-pct-wrap"><input type="number" id="cpo" value="" min="0" max="100" step="0.1" placeholder="0"><span class="unit">%</span></div>
+            <div class="inp-wrap" id="drr-rub-wrap" style="display:none"><input type="number" id="cpo-rub" value="" min="0" step="1" placeholder="0"><span class="unit">₽</span></div>
+            <div class="commission-auto" id="drr-hint"></div>
+          </div>
+          <div class="field" style="flex:1">
+            <div style="height:30px;display:flex;align-items:flex-end"><label>Итоговая налоговая ставка</label></div>
+            <div class="inp-wrap"><input type="number" id="tax" value="" min="0" max="100" step="0.5" placeholder="0"><span class="unit">%</span></div>
+            <div style="min-height:14px"></div>
+          </div>
+          <div style="flex:1"></div>
         </div>
 
       </div>
@@ -217,7 +250,7 @@
           <div class="brow"><span class="bl">Эквайринг</span><span class="bv neg" id="r-acquiring">—</span></div>
           <div class="brow"><span class="bl">Тарифные опции</span><span class="bv neg" id="r-tariff">—</span></div>
           <div class="brow"><span class="bl">Комиссия WB</span><span class="bv neg" id="r-commission">—</span></div>
-          <div class="brow"><span class="bl">ДРР</span><span class="bv neg" id="r-cps">—</span></div>
+          <div class="brow"><span class="bl" id="drr-label">ДРР</span><span class="bv neg" id="r-cps">—</span></div>
           <div class="brow"><span class="bl">Логистика</span><span class="bv neg" id="r-logistics">—</span></div>
           <div class="brow"><span class="bl">Хранение</span><span class="bv neg" id="r-storage">—</span></div>
           <div class="brow"><span class="bl">Себестоимость</span><span class="bv neg" id="r-cogs">—</span></div>
@@ -232,6 +265,16 @@
       <div class="card"><div class="clabel">ROI</div><div class="cval" id="out-roi">—</div></div>
       <div class="card"><div class="clabel">Маржинальность</div><div class="cval" id="out-marg-pct">—</div></div>
       <div class="card"><div class="clabel">Цена после СПП</div><div class="cval" id="out-price-spp">—</div><div class="csub" id="out-commission">комиссия —</div></div>
+    </div>
+
+    <!-- ROI target -->
+    <div class="roi-target-box">
+      <div class="roi-target-title">Целевой ROI → нужная цена</div>
+      <div class="roi-target-row">
+        <label>Целевой ROI</label>
+        <div class="inp-wrap" style="width:100px"><input type="number" id="target-roi" value="" min="0" step="1" placeholder="50"><span class="unit">%</span></div>
+        <div class="roi-target-result" id="target-price-result">введите ROI →</div>
+      </div>
     </div>
 
     <div class="actions">
@@ -348,12 +391,54 @@ function getValues() {
   return v;
 }
 
+let drrMode = 'pct'; // 'pct' or 'rub'
+
+function setDrrMode(mode) {
+  drrMode = mode;
+  document.getElementById('drr-pct-btn').classList.toggle('active', mode === 'pct');
+  document.getElementById('drr-rub-btn').classList.toggle('active', mode === 'rub');
+  document.getElementById('drr-pct-wrap').style.display = mode === 'pct' ? '' : 'none';
+  document.getElementById('drr-rub-wrap').style.display = mode === 'rub' ? '' : 'none';
+  updateDrrHint();
+  const lbl = document.getElementById('drr-label');
+  if (lbl) lbl.textContent = mode === 'pct' ? 'ДРР' : 'СРО → расход на ед';
+  calc();
+}
+
+function updateDrrHint() {
+  const hint = document.getElementById('drr-hint');
+  if (!hint) return;
+  if (drrMode === 'rub') {
+    const cpo = +document.getElementById('cpo-rub').value || 0;
+    const buyout = +document.getElementById('buyout').value || 100;
+    if (cpo > 0 && buyout > 0) {
+      const perUnit = cpo / (buyout / 100);
+      hint.textContent = 'На 1 проданную ед: ' + perUnit.toFixed(1) + ' ₽';
+    } else {
+      hint.textContent = '';
+    }
+  } else {
+    hint.textContent = '';
+  }
+}
+
+function getDrr(price) {
+  if (drrMode === 'pct') {
+    return price * ((+document.getElementById('cpo').value || 0) / 100);
+  } else {
+    // СРО: стоимость заказа / процент выкупа
+    const cpo = +document.getElementById('cpo-rub').value || 0;
+    const buyout = +document.getElementById('buyout').value || 100;
+    return buyout > 0 ? cpo / (buyout / 100) : cpo;
+  }
+}
+
 function compute(v) {
   const priceSPP   = v.price * (1 - v.spp / 100);
   const acquiring  = v.price * (v.acquiring / 100);
   const tariff     = v.price * (v.tariff / 100);
   const commission = v.price * (v.commission / 100);
-  const drr        = v.price * (v.cpo / 100);
+  const drr        = getDrr(v.price);
   const tax        = priceSPP * (v.tax / 100);
   const margin     = v.price - acquiring - tariff - commission - drr - v.logistics - v.storage - v.cogs - tax;
   const roi        = v.cogs > 0 ? (margin / v.cogs) * 100 : 0;
@@ -373,7 +458,11 @@ function calc() {
   document.getElementById('r-acquiring').textContent = v.acquiring > 0 ? '−' + fmt(r.acquiring) + ' ₽' : '—';
   document.getElementById('r-tariff').textContent    = v.tariff > 0 ? '−' + fmt(r.tariff) + ' ₽' : '—';
   document.getElementById('r-commission').textContent = v.commission > 0 ? '−' + fmt(r.commission) + ' ₽' : '—';
-  document.getElementById('r-cps').textContent       = v.cpo > 0 ? '−' + fmt(r.drr) + ' ₽' : '—';
+  const drrVal = r.drr;
+  const drrInputHasValue = drrMode === 'pct'
+    ? (+document.getElementById('cpo').value || 0) > 0
+    : (+document.getElementById('cpo-rub').value || 0) > 0;
+  document.getElementById('r-cps').textContent = drrInputHasValue ? '−' + fmt(drrVal) + ' ₽' : '—';
   document.getElementById('r-logistics').textContent = v.logistics > 0 ? '−' + fmt(v.logistics) + ' ₽' : '—';
   document.getElementById('r-storage').textContent   = v.storage > 0 ? '−' + fmt(v.storage) + ' ₽' : '—';
   document.getElementById('r-cogs').textContent      = v.cogs > 0 ? '−' + fmt(v.cogs) + ' ₽' : '—';
@@ -390,6 +479,51 @@ function calc() {
   document.getElementById('out-marg-pct').className = 'cval ' + (v.price ? uiCls : '');
   document.getElementById('out-price-spp').textContent = v.price ? fmt(r.priceSPP) + ' ₽' : '—';
   document.getElementById('out-commission').textContent = v.commission > 0 ? 'комиссия ' + fmt(r.commission) + ' ₽' : '';
+  updateDrrHint();
+  calcTargetPrice();
+}
+
+function calcTargetPrice() {
+  const targetRoi = +document.getElementById('target-roi').value;
+  const el = document.getElementById('target-price-result');
+  if (!targetRoi) { el.innerHTML = '<span style="color:var(--text-tertiary);font-size:12px">введите целевой ROI →</span>'; return; }
+
+  const v = getValues();
+  if (!v.cogs) { el.innerHTML = '<span style="color:var(--text-tertiary);font-size:12px">укажите себестоимость</span>'; return; }
+
+  // margin = cogs * targetRoi/100
+  // margin = price - acquiring - tariff - commission - drr - logistics - storage - cogs - tax
+  // Раскрываем: все расходы зависят от price
+  // acquiring = price * aq/100
+  // tariff = price * tar/100
+  // commission = price * comm/100
+  // drr (pct mode) = price * drr_pct/100
+  // tax = price*(1-spp/100) * tax/100
+  // drr (rub mode) = fixed (не зависит от цены)
+
+  const targetMargin = v.cogs * targetRoi / 100;
+  const sppK = 1 - v.spp / 100;
+  const fixedCosts = v.logistics + v.storage + v.cogs;
+
+  let coefPrice, fixedExtra;
+  if (drrMode === 'pct') {
+    const drrPct = +document.getElementById('cpo').value || 0;
+    coefPrice = (v.acquiring + v.tariff + v.commission + drrPct) / 100 + sppK * v.tax / 100;
+    fixedExtra = 0;
+  } else {
+    const rubPerOrder = +document.getElementById('cpo-rub').value || 0;
+    const buyout = v.buyout || 100;
+    fixedExtra = buyout > 0 ? rubPerOrder / (buyout / 100) : rubPerOrder;
+    coefPrice = (v.acquiring + v.tariff + v.commission) / 100 + sppK * v.tax / 100;
+  }
+
+  // targetMargin = price - price*coefPrice - fixedCosts - fixedExtra
+  // price*(1 - coefPrice) = targetMargin + fixedCosts + fixedExtra
+  const denominator = 1 - coefPrice;
+  if (denominator <= 0) { el.innerHTML = '<span style="color:var(--red);font-size:12px">невозможно рассчитать</span>'; return; }
+
+  const targetPrice = (targetMargin + fixedCosts + fixedExtra) / denominator;
+  el.innerHTML = 'Нужная цена: <strong>' + fmt(targetPrice) + ' ₽</strong>';
 }
 
 // ---- History ----
@@ -408,8 +542,26 @@ function renderHistory() {
   const list = document.getElementById('history-list');
   const empty = document.getElementById('history-empty');
   if (history.length === 0) { list.innerHTML = ''; list.appendChild(empty); empty.style.display = 'block'; return; }
+
+  const q = (document.getElementById('history-search')?.value || '').trim().toLowerCase();
+  const filtered = q ? history.filter(e => {
+    const name = (e.label || '').toLowerCase();
+    const article = (e.article || '').toLowerCase();
+    const roi = (e.roi || 0).toFixed(2);
+    const margin = (e.margin || 0).toFixed(1);
+    return name.includes(q) || article.includes(q) || roi.includes(q) || margin.includes(q);
+  }) : history;
+
   list.innerHTML = '';
-  history.forEach(e => {
+  if (filtered.length === 0) {
+    const d = document.createElement('div');
+    d.className = 'history-no-results';
+    d.textContent = 'Ничего не найдено';
+    list.appendChild(d);
+    return;
+  }
+
+  filtered.forEach(e => {
     const div = document.createElement('div');
     div.className = 'history-item' + (e.id === activeId ? ' active' : '');
     div.innerHTML = '<div class="hi-row"><div class="hi-name">' + e.label + '</div><button class="del-btn" data-id="' + e.id + '">✕</button></div><div class="hi-meta">' + (e.article ? 'Арт. ' + e.article + ' · ' : '') + e.ts + '</div><div class="hi-margin ' + (e.margin >= 0 ? 'green' : 'red') + '">' + fmt(e.margin) + ' ₽ · ROI ' + (e.roi||0).toFixed(1) + '%</div>';
@@ -630,6 +782,8 @@ try {
 });
 
 document.querySelectorAll('input[type="number"]').forEach(el => el.addEventListener('input', calc));
+document.getElementById('target-roi').addEventListener('input', calcTargetPrice);
+document.getElementById('cpo-rub').addEventListener('input', calc);
 loadFromStorage();
 calc();
 renderHistory();
