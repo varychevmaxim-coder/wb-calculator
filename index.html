@@ -99,7 +99,15 @@
     .wb-badge { background: #F9E8F7; color: #CB11AB; }
     .ozon-badge { background: #E8F0FF; color: #005BFF; }
     .market-tab.active .market-badge { background: rgba(255,255,255,0.25); color: white; }
-    .hi-badge { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; margin-left: 4px; }
+    .hi-badge { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; }
+    .hi-paired { border-left: 2px solid var(--border-strong); }
+    .hi-compare-row { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+    .hi-compare-cell { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: var(--radius); cursor: pointer; background: var(--bg-secondary); transition: background .12s; }
+    .hi-compare-cell:hover { background: var(--bg); }
+    .hi-compare-cell.wb-cell:hover { box-shadow: 0 0 0 1.5px #CB11AB33; }
+    .hi-compare-cell.oz-cell:hover { box-shadow: 0 0 0 1.5px #005BFF33; }
+    .hi-compare-sep { font-size: 10px; color: var(--text-tertiary); font-weight: 600; flex-shrink: 0; }
+    .hi-roi { font-size: 10px; color: var(--text-secondary); }
     .hi-badge-wb { background: #F9E8F7; color: #CB11AB; margin-right: 5px; margin-left: 0; }
     .hi-badge-oz { background: #E8F0FF; color: #005BFF; margin-right: 5px; margin-left: 0; }
     /* Ozon fields */
@@ -685,12 +693,22 @@ function renderHistory() {
   if (history.length === 0) { list.innerHTML = ''; list.appendChild(empty); empty.style.display = 'block'; return; }
 
   const q = (document.getElementById('history-search')?.value || '').trim().toLowerCase();
+
+  // Group by article: find pairs where same article has both WB + Ozon
+  const byArticle = {};
+  history.forEach(e => {
+    const key = (e.article || '').trim();
+    if (key) {
+      if (!byArticle[key]) byArticle[key] = {};
+      byArticle[key][e.market === 'ozon' ? 'ozon' : 'wb'] = e;
+    }
+  });
+
   const filtered = q ? history.filter(e => {
     const name = (e.label || '').toLowerCase();
     const article = (e.article || '').toLowerCase();
     const roi = (e.roi || 0).toFixed(2);
-    const margin = (e.margin || 0).toFixed(1);
-    return name.includes(q) || article.includes(q) || roi.includes(q) || margin.includes(q);
+    return name.includes(q) || article.includes(q) || roi.includes(q);
   }) : history;
 
   list.innerHTML = '';
@@ -702,31 +720,123 @@ function renderHistory() {
     return;
   }
 
+  // Track which paired articles already rendered
+  const renderedPairs = new Set();
+
   filtered.forEach(e => {
+    const artKey = (e.article || '').trim();
+    const pair = artKey && byArticle[artKey];
+    const isPaired = pair && pair.wb && pair.ozon;
+
+    // If paired, render once (on first encounter)
+    if (isPaired) {
+      const pairKey = artKey + '_pair';
+      if (renderedPairs.has(pairKey)) return;
+      renderedPairs.add(pairKey);
+
+      const wbEntry = pair.wb;
+      const ozEntry = pair.ozon;
+      const div = document.createElement('div');
+      div.className = 'hi-item hi-paired' + (activeId === wbEntry.id || activeId === ozEntry.id ? ' active' : '');
+
+      const wbBadge = '<span class="hi-badge hi-badge-wb">WB</span>';
+      const ozBadge = '<span class="hi-badge hi-badge-oz">Ozon</span>';
+      const name = wbEntry.label || ozEntry.label;
+
+      div.innerHTML = `
+        <div class="hi-row">
+          <div class="hi-name">${wbBadge}${ozBadge} ${name}</div>
+          <button class="del-btn" data-pair="${artKey}">✕</button>
+        </div>
+        <div class="hi-meta">${artKey ? 'Арт. ' + artKey + ' · ' : ''}${wbEntry.ts}</div>
+        <div class="hi-compare-row">
+          <div class="hi-compare-cell wb-cell" data-id="${wbEntry.id}" data-market="wb">
+            <span class="hi-badge hi-badge-wb" style="font-size:8px">WB</span>
+            <span class="hi-margin ${wbEntry.margin >= 0 ? 'green' : 'red'}">${fmt(wbEntry.margin)} ₽</span>
+            <span class="hi-roi">ROI ${(wbEntry.roi||0).toFixed(1)}%</span>
+          </div>
+          <div class="hi-compare-sep">vs</div>
+          <div class="hi-compare-cell oz-cell" data-id="${ozEntry.id}" data-market="ozon">
+            <span class="hi-badge hi-badge-oz" style="font-size:8px">Ozon</span>
+            <span class="hi-margin ${ozEntry.margin >= 0 ? 'green' : 'red'}">${fmt(ozEntry.margin)} ₽</span>
+            <span class="hi-roi">ROI ${(ozEntry.roi||0).toFixed(1)}%</span>
+          </div>
+        </div>`;
+
+      // Click on WB cell
+      div.querySelector('.wb-cell').addEventListener('click', () => {
+        activeId = wbEntry.id;
+        if (activeMarket !== 'wb') switchMarket('wb');
+        loadFromHistoryEntry(wbEntry);
+        renderHistory();
+      });
+      // Click on Ozon cell
+      div.querySelector('.oz-cell').addEventListener('click', () => {
+        activeId = ozEntry.id;
+        if (activeMarket !== 'ozon') switchMarket('ozon');
+        loadOzonFromHistory(ozEntry);
+        renderHistory();
+      });
+      // Delete pair
+      div.querySelector('.del-btn').addEventListener('click', ev => {
+        ev.stopPropagation();
+        history = history.filter(h => h.id !== wbEntry.id && h.id !== ozEntry.id);
+        saveToStorage(); renderHistory();
+      });
+      list.appendChild(div);
+      return;
+    }
+
+    // Normal single entry
     const div = document.createElement('div');
-    div.className = 'history-item' + (e.id === activeId ? ' active' : '');
-    const badge = e.market === 'ozon' ? '<span class="hi-badge hi-badge-oz">Ozon</span>' : '<span class="hi-badge hi-badge-wb">WB</span>';
+    div.className = 'hi-item' + (activeId === e.id ? ' active' : '');
+    const badge = e.market === 'ozon'
+      ? '<span class="hi-badge hi-badge-oz">Ozon</span>'
+      : '<span class="hi-badge hi-badge-wb">WB</span>';
     div.innerHTML = '<div class="hi-row"><div class="hi-name">' + badge + e.label + '</div><button class="del-btn" data-id="' + e.id + '">✕</button></div><div class="hi-meta">' + (e.article ? 'Арт. ' + e.article + ' · ' : '') + e.ts + '</div><div class="hi-margin ' + (e.margin >= 0 ? 'green' : 'red') + '">' + fmt(e.margin) + ' ₽ · ROI ' + (e.roi||0).toFixed(1) + '%</div>';
-    div.querySelector('.del-btn').addEventListener('click', ev => { ev.stopPropagation(); history = history.filter(x => x.id !== e.id); if (activeId === e.id) activeId = null; saveToStorage(); renderHistory(); });
-    div.addEventListener('click', () => {
+    div.addEventListener('click', ev => {
+      if (ev.target.classList.contains('del-btn')) return;
       activeId = e.id;
-      if (e.market === 'ozon') { switchMarket('ozon'); loadOzonFromHistory(e); renderHistory(); return; }
-      if (activeMarket !== 'wb') switchMarket('wb');
-      const v = e.values;
-      document.getElementById('product-name').value = v.name || '';
-      document.getElementById('article').value = v.article || '';
-      catSearch.value = e.category || '';
-      if (e.category) {
-        const found = COMMISSIONS.find(c => c[0] === e.category);
-        if (found) { document.getElementById('commission-auto').textContent = found[1] + ' — ' + found[2] + '%'; document.getElementById('commission').classList.add('autofilled'); }
+      if (e.market === 'ozon') {
+        if (activeMarket !== 'ozon') switchMarket('ozon');
+        loadOzonFromHistory(e);
+      } else {
+        if (activeMarket !== 'wb') switchMarket('wb');
+        loadFromHistoryEntry(e);
       }
-      FIELDS.forEach(k => { const el = document.getElementById(k); if (el) el.value = v[k] || ''; });
-      if (e.logisticsData && Object.keys(e.logisticsData).length) { logisticsData[e.id] = e.logisticsData; document.getElementById('logistics-applied').textContent = 'Рассчитано по габаритам'; }
-      calc(); renderHistory();
+      renderHistory();
+    });
+    div.querySelector('.del-btn').addEventListener('click', ev => {
+      ev.stopPropagation();
+      history = history.filter(h => h.id !== e.id);
+      if (activeId === e.id) activeId = null;
+      saveToStorage(); renderHistory();
     });
     list.appendChild(div);
   });
 }
+
+function loadFromHistoryEntry(e) {
+  const v = e.values;
+  document.getElementById('product-name').value = v.name || '';
+  document.getElementById('article').value = v.article || '';
+  document.getElementById('cat-search').value = v.category || '';
+  document.getElementById('price').value = v.price || '';
+  document.getElementById('spp').value = v.spp || '';
+  document.getElementById('commission').value = v.commission || '';
+  document.getElementById('acquiring').value = v.acquiring || '';
+  document.getElementById('tariff').value = v.tariff || '';
+  document.getElementById('buyout').value = v.buyout || '';
+  document.getElementById('logistics').value = v.logistics || '';
+  document.getElementById('cogs').value = v.cogs || '';
+  document.getElementById('storage').value = v.storage || '';
+  document.getElementById('cpo').value = v.cpo || '';
+  document.getElementById('cpo-rub').value = v.cpoRub || '';
+  document.getElementById('tax').value = v.tax || '';
+  if (v.drrMode) setDrrMode(v.drrMode);
+  calc(); renderHistory();
+}
+
 
 // ---- Share / Export / Reset ----
 function shareCalc() {
@@ -1207,7 +1317,7 @@ if (ozCatSearch) {
       OZON_COMMISSIONS.slice(0, 20).forEach(item => {
         const div = document.createElement('div');
         div.className = 'cat-item';
-        const rate = ozonScheme === 'fbo' ? item[2] : item[3];
+        const rate = ozScheme === 'fbo' ? item[2] : item[3];
         div.innerHTML =
           '<div class="cat-item-name">' + item[0] + '</div>' +
           '<div class="cat-item-sub">' + item[1] + ' · FBO ' + item[2] + '% / FBS ' + item[3] + '%</div>';
@@ -1218,7 +1328,7 @@ if (ozCatSearch) {
           document.getElementById('oz-commission').value = rate;
           document.getElementById('oz-commission').classList.add('autofilled');
           document.getElementById('oz-commission-auto').textContent =
-            item[1] + ' · ' + ozonScheme.toUpperCase() + ' — ' + rate + '%';
+            item[1] + ' · ' + ozScheme.toUpperCase() + ' — ' + rate + '%';
           calcOzon();
         });
         ozCatList.appendChild(div);
@@ -1245,7 +1355,7 @@ function saveOzonCalc() {
   const label = v.name || (v.article ? 'Арт. ' + v.article : v.category || 'Расчёт');
   history.unshift({
     id, label, article: v.article, margin: r.margin, roi: r.roi,
-    values: {...v, scheme: ozonScheme}, category: v.category, market: 'ozon',
+    values: {...v, scheme: ozScheme}, category: v.category, market: 'ozon',
     ts: new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'})
   });
   activeId = id; saveToStorage(); renderHistory();
