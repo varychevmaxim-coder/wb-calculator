@@ -93,15 +93,15 @@
     .market-tab { height: 36px; padding: 0 18px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); background: transparent; color: var(--text-secondary); font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 8px; }
     .market-tab:hover { background: var(--bg-secondary); }
     .market-tab.active { border-color: transparent; color: white; }
-    .market-tab.active.wb-tab { background: var(--green); }
+    .market-tab.active.wb-tab { background: #CB11AB; }
     .market-tab.active.ozon-tab { background: #005BFF; }
     .market-badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; letter-spacing: .04em; }
-    .wb-badge { background: var(--green-bg); color: var(--green); }
+    .wb-badge { background: #F9E8F7; color: #CB11AB; }
     .ozon-badge { background: #E8F0FF; color: #005BFF; }
     .market-tab.active .market-badge { background: rgba(255,255,255,0.25); color: white; }
     .hi-badge { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; margin-left: 4px; }
-    .hi-badge-wb { background: var(--green-bg); color: var(--green); }
-    .hi-badge-oz { background: #E8F0FF; color: #005BFF; }
+    .hi-badge-wb { background: #F9E8F7; color: #CB11AB; margin-right: 5px; margin-left: 0; }
+    .hi-badge-oz { background: #E8F0FF; color: #005BFF; margin-right: 5px; margin-left: 0; }
     /* Ozon fields */
     .ozon-section { display: none; }
     .ozon-section.visible { display: block; }
@@ -668,7 +668,7 @@ function calcTargetPrice() {
 }
 
 // ---- History ----
-function saveCalc() {
+function saveWBCalc() {
   const v = getValues(); const r = compute(v);
   const id = Date.now();
   const label = v.name || (v.article ? 'Арт. ' + v.article : v.category || 'Расчёт');
@@ -706,7 +706,7 @@ function renderHistory() {
     const div = document.createElement('div');
     div.className = 'history-item' + (e.id === activeId ? ' active' : '');
     const badge = e.market === 'ozon' ? '<span class="hi-badge hi-badge-oz">Ozon</span>' : '<span class="hi-badge hi-badge-wb">WB</span>';
-    div.innerHTML = '<div class="hi-row"><div class="hi-name">' + e.label + badge + '</div><button class="del-btn" data-id="' + e.id + '">✕</button></div><div class="hi-meta">' + (e.article ? 'Арт. ' + e.article + ' · ' : '') + e.ts + '</div><div class="hi-margin ' + (e.margin >= 0 ? 'green' : 'red') + '">' + fmt(e.margin) + ' ₽ · ROI ' + (e.roi||0).toFixed(1) + '%</div>';
+    div.innerHTML = '<div class="hi-row"><div class="hi-name">' + badge + e.label + '</div><button class="del-btn" data-id="' + e.id + '">✕</button></div><div class="hi-meta">' + (e.article ? 'Арт. ' + e.article + ' · ' : '') + e.ts + '</div><div class="hi-margin ' + (e.margin >= 0 ? 'green' : 'red') + '">' + fmt(e.margin) + ' ₽ · ROI ' + (e.roi||0).toFixed(1) + '%</div>';
     div.querySelector('.del-btn').addEventListener('click', ev => { ev.stopPropagation(); history = history.filter(x => x.id !== e.id); if (activeId === e.id) activeId = null; saveToStorage(); renderHistory(); });
     div.addEventListener('click', () => {
       activeId = e.id;
@@ -1229,13 +1229,12 @@ if (ozCatSearch) {
   ozCatSearch.addEventListener('blur', () => setTimeout(() => ozCatList.classList.remove('open'), 200));
 }
 
-// Override saveCalc to support both markets
-const _origSaveCalc = saveCalc;
+// Unified saveCalc dispatcher
 function saveCalc() {
   if (activeMarket === 'ozon') {
     saveOzonCalc();
   } else {
-    _origSaveCalc();
+    saveWBCalc();
   }
 }
 
