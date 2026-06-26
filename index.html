@@ -101,13 +101,7 @@
     .market-tab.active .market-badge { background: rgba(255,255,255,0.25); color: white; }
     .hi-badge { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; }
     .hi-paired { border-left: 2px solid var(--border-strong); }
-    .hi-compare-row { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
-    .hi-compare-cell { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: var(--radius); cursor: pointer; background: var(--bg-secondary); transition: background .12s; }
-    .hi-compare-cell:hover { background: var(--bg); }
-    .hi-compare-cell.wb-cell:hover { box-shadow: 0 0 0 1.5px #CB11AB33; }
-    .hi-compare-cell.oz-cell:hover { box-shadow: 0 0 0 1.5px #005BFF33; }
-    .hi-compare-sep { font-size: 10px; color: var(--text-tertiary); font-weight: 600; flex-shrink: 0; }
-    .hi-roi { font-size: 10px; color: var(--text-secondary); }
+
     .hi-badge-wb { background: #F9E8F7; color: #CB11AB; margin-right: 5px; margin-left: 0; }
     .hi-badge-oz { background: #E8F0FF; color: #005BFF; margin-right: 5px; margin-left: 0; }
     /* Ozon fields */
@@ -743,41 +737,46 @@ function renderHistory() {
       const ozBadge = '<span class="hi-badge hi-badge-oz">Ozon</span>';
       const name = wbEntry.label || ozEntry.label;
 
-      div.innerHTML = `
-        <div class="hi-row">
-          <div class="hi-name">${wbBadge}${ozBadge} ${name}</div>
-          <button class="del-btn" data-pair="${artKey}">✕</button>
-        </div>
-        <div class="hi-meta">${artKey ? 'Арт. ' + artKey + ' · ' : ''}${wbEntry.ts}</div>
-        <div class="hi-compare-row">
-          <div class="hi-compare-cell wb-cell" data-id="${wbEntry.id}" data-market="wb">
-            <span class="hi-badge hi-badge-wb" style="font-size:8px">WB</span>
-            <span class="hi-margin ${wbEntry.margin >= 0 ? 'green' : 'red'}">${fmt(wbEntry.margin)} ₽</span>
-            <span class="hi-roi">ROI ${(wbEntry.roi||0).toFixed(1)}%</span>
-          </div>
-          <div class="hi-compare-sep">vs</div>
-          <div class="hi-compare-cell oz-cell" data-id="${ozEntry.id}" data-market="ozon">
-            <span class="hi-badge hi-badge-oz" style="font-size:8px">Ozon</span>
-            <span class="hi-margin ${ozEntry.margin >= 0 ? 'green' : 'red'}">${fmt(ozEntry.margin)} ₽</span>
-            <span class="hi-roi">ROI ${(ozEntry.roi||0).toFixed(1)}%</span>
-          </div>
-        </div>`;
+      const wbMarginCls = wbEntry.margin >= 0 ? 'green' : 'red';
+      const ozMarginCls = ozEntry.margin >= 0 ? 'green' : 'red';
+      div.innerHTML =
+        '<div class="hi-row"><div class="hi-name">' +
+          '<span class="hi-badge hi-badge-wb" style="cursor:pointer;margin-right:3px" data-mkt="wb">WB</span>' +
+          '<span class="hi-badge hi-badge-oz" style="cursor:pointer;margin-right:5px" data-mkt="ozon">Ozon</span>' +
+          name +
+        '</div><button class="del-btn">✕</button></div>' +
+        '<div class="hi-meta">' + (artKey ? 'Арт. ' + artKey + ' · ' : '') + wbEntry.ts + '</div>' +
+        '<div class="hi-margin ' + wbMarginCls + '">WB ' + fmt(wbEntry.margin) + ' ₽ · ROI ' + (wbEntry.roi||0).toFixed(1) + '%</div>' +
+        '<div class="hi-margin ' + ozMarginCls + '" style="margin-top:2px">Ozon ' + fmt(ozEntry.margin) + ' ₽ · ROI ' + (ozEntry.roi||0).toFixed(1) + '%</div>';
 
-      // Click on WB cell
-      div.querySelector('.wb-cell').addEventListener('click', () => {
+      // Click on WB badge → load WB
+      div.querySelector('[data-mkt="wb"]').addEventListener('click', ev => {
+        ev.stopPropagation();
         activeId = wbEntry.id;
         if (activeMarket !== 'wb') switchMarket('wb');
         loadFromHistoryEntry(wbEntry);
         renderHistory();
       });
-      // Click on Ozon cell
-      div.querySelector('.oz-cell').addEventListener('click', () => {
+      // Click on Ozon badge → load Ozon
+      div.querySelector('[data-mkt="ozon"]').addEventListener('click', ev => {
+        ev.stopPropagation();
         activeId = ozEntry.id;
         if (activeMarket !== 'ozon') switchMarket('ozon');
         loadOzonFromHistory(ozEntry);
         renderHistory();
       });
-      // Delete pair
+      // Click elsewhere → load by active market
+      div.addEventListener('click', ev => {
+        if (ev.target.classList.contains('del-btn') || ev.target.dataset.mkt) return;
+        if (activeMarket === 'ozon') {
+          activeId = ozEntry.id;
+          loadOzonFromHistory(ozEntry);
+        } else {
+          activeId = wbEntry.id;
+          loadFromHistoryEntry(wbEntry);
+        }
+        renderHistory();
+      });
       div.querySelector('.del-btn').addEventListener('click', ev => {
         ev.stopPropagation();
         history = history.filter(h => h.id !== wbEntry.id && h.id !== ozEntry.id);
