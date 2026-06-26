@@ -38,10 +38,14 @@
     .history-item { padding: 10px 16px; cursor: pointer; border-bottom: 0.5px solid var(--border); transition: background .12s; }
     .history-item:hover { background: var(--bg-secondary); }
     .history-item.active { background: var(--bg-secondary); border-left: 2px solid var(--green); padding-left: 14px; }
+    .hi-item { padding: 10px 12px 12px; border-bottom: 0.5px solid var(--border); cursor: pointer; transition: background .12s; }
+    .hi-item:hover { background: var(--bg-secondary); }
+    .hi-item.active { background: var(--bg-secondary); }
+    .hi-item:first-child { border-top: 0.5px solid var(--border); }
     .hi-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; }
     .hi-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
-    .hi-meta { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
-    .hi-margin { font-size: 12px; font-weight: 500; margin-top: 4px; }
+    .hi-meta { font-size: 11px; color: var(--text-tertiary); margin-top: 3px; }
+    .hi-margin { font-size: 12px; font-weight: 600; margin-top: 5px; }
     .hi-margin.green { color: var(--green); }
     .hi-margin.red { color: var(--red); }
     .del-btn { background: none; border: none; cursor: pointer; color: var(--text-tertiary); font-size: 12px; padding: 1px 4px; border-radius: 4px; line-height: 1; flex-shrink: 0; }
