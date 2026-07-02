@@ -848,6 +848,7 @@ function renderHistory() {
 
 function loadFromHistoryEntry(e) {
   const v = e.values;
+  activeId = e.id; wbActiveId = e.id;
   document.getElementById('product-name').value = v.name || '';
   document.getElementById('article').value = v.article || '';
   document.getElementById('cat-search').value = v.category || '';
@@ -1145,10 +1146,42 @@ function switchMarket(market) {
   const wbRoiBox = document.querySelector('.roi-target-box:not(#oz-roi-box)');
   if (wbRoiBox) wbRoiBox.style.display = market === 'wb' ? 'block' : 'none';
 
+  // Умная синхронизация: только если целевой маркетплейс — НОВЫЙ расчёт (не из истории)
+  if (market === 'ozon' && !ozActiveId) syncCommonFields('wb', 'ozon');
+  else if (market === 'wb' && !wbActiveId) syncCommonFields('ozon', 'wb');
+
   if (market === 'ozon') calcOzon();
   else calc();
   const ozBtn = document.getElementById('oz-calc-btn');
   if (ozBtn) ozBtn.style.display = market === 'ozon' ? 'inline-flex' : 'none';
+}
+
+// Синхронизирует общие поля из одного маркетплейса в другой (только пустые)
+function syncCommonFields(from, to) {
+  // [wbId, ozId] пары общих полей
+  const common = [
+    ['article',      'oz-article'],
+    ['product-name', 'oz-name'],
+    ['cogs',         'oz-cogs'],
+    ['tax',          'oz-tax'],
+    ['buyout',       'oz-buyout'],
+  ];
+  common.forEach(([wbId, ozId]) => {
+    const srcId = from === 'wb' ? wbId : ozId;
+    const dstId = to === 'wb' ? wbId : ozId;
+    const src = document.getElementById(srcId);
+    const dst = document.getElementById(dstId);
+    if (src && dst && src.value && !dst.value) dst.value = src.value;
+  });
+  // Габариты для модалки логистики
+  const dims = [['l-length','oz-l-length'],['l-width','oz-l-width'],['l-height','oz-l-height']];
+  dims.forEach(([wbId, ozId]) => {
+    const srcId = from === 'wb' ? wbId : ozId;
+    const dstId = to === 'wb' ? wbId : ozId;
+    const src = document.getElementById(srcId);
+    const dst = document.getElementById(dstId);
+    if (src && dst && src.value && !dst.value) dst.value = src.value;
+  });
 }
 
 function syncWbToOzon() {
@@ -1444,6 +1477,7 @@ function saveOzonCalc() {
 
 function loadOzonFromHistory(e) {
   const v = e.values;
+  activeId = e.id; ozActiveId = e.id;
   document.getElementById('oz-article').value = v.article || '';
   document.getElementById('oz-name').value = v.name || '';
   document.getElementById('oz-cat-search').value = v.category || '';
