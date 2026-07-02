@@ -325,10 +325,9 @@
             </div>
             <div class="logistics-applied" id="oz-logistics-applied"></div>
           </div>
-          <div class="field">
+          <div class="field" style="display:none">
             <label>Обратная логистика</label>
             <div class="inp-wrap"><input type="number" id="oz-return-log" value="" min="0" placeholder="0" oninput="calcOzon()"><span class="unit">₽</span></div>
-            <div class="commission-auto">на 1 возврат</div>
           </div>
           <div class="field"><label>Хранение на 1 ед</label><div class="inp-wrap"><input type="number" id="oz-storage" value="" min="0" placeholder="0" oninput="calcOzon()"><span class="unit">₽</span></div></div>
         </div>
@@ -1098,10 +1097,29 @@ function switchMarket(market) {
   const wbRoiBox = document.querySelector('.roi-target-box:not(#oz-roi-box)');
   if (wbRoiBox) wbRoiBox.style.display = market === 'wb' ? 'block' : 'none';
 
-  if (market === 'ozon') calcOzon();
-  else calc();
+  // Sync shared fields between markets (only into empty fields)
+  if (market === 'ozon') { syncWbToOzon(); calcOzon(); }
+  else { syncOzonToWb(); calc(); }
   const ozBtn = document.getElementById('oz-calc-btn');
   if (ozBtn) ozBtn.style.display = market === 'ozon' ? 'inline-flex' : 'none';
+}
+
+function syncWbToOzon() {
+  const pairs = [['product-name','oz-name'],['cogs','oz-cogs'],['tax','oz-tax']];
+  pairs.forEach(([a,b]) => { const v=document.getElementById(a)?.value; const el=document.getElementById(b); if(v&&el&&!el.value) el.value=v; });
+  // Dimensions
+  [['l-length','oz-l-length'],['l-width','oz-l-width'],['l-height','oz-l-height']].forEach(([a,b]) => {
+    const v=document.getElementById(a)?.value; const el=document.getElementById(b); if(v&&el&&!el.value) el.value=v;
+  });
+}
+
+function syncOzonToWb() {
+  const pairs = [['oz-name','product-name'],['oz-cogs','cogs'],['oz-tax','tax']];
+  pairs.forEach(([a,b]) => { const v=document.getElementById(a)?.value; const el=document.getElementById(b); if(v&&el&&!el.value) el.value=v; });
+  // Dimensions
+  [['oz-l-length','l-length'],['oz-l-width','l-width'],['oz-l-height','l-height']].forEach(([a,b]) => {
+    const v=document.getElementById(a)?.value; const el=document.getElementById(b); if(v&&el&&!el.value) el.value=v;
+  });
 }
 
 function setOzonDrrMode(mode) {
@@ -1154,6 +1172,7 @@ function computeOzon(v) {
   const acquiring    = priceBuyer * (v.acquiring / 100);        // от суммы транзакции (цена покупателя)
   const buyoutRate   = v.buyout / 100;
   const returnRate   = 1 - buyoutRate;
+  // Формула: (прямая + стоимость_возврата × returnRate) / buyoutRate
   const logisticsFull = buyoutRate > 0
     ? (v.logistics + v.returnLog * returnRate) / buyoutRate
     : v.logistics + v.returnLog;
@@ -1468,7 +1487,13 @@ function calcOzonLog() {
   const nonlocalAmt = itemPrice * nonlocalPct / 100;
 
   const directPerShipment = baseRate + nonlocalAmt + lastmile;
-  const returnPerShipment = baseRate; // возврат без нелокальности и без последней мили
+  // Обратная логистика: из поля в модалке или = тариф доставки
+  const returnOverride = +document.getElementById('oz-l-return-cost')?.value || 0;
+  const returnPerShipment = returnOverride > 0 ? returnOverride : baseRate;
+  const returnHint = document.getElementById('oz-l-return-hint');
+  if (returnHint) returnHint.textContent = returnOverride > 0
+    ? 'задано вручную'
+    : 'по умолчанию = тариф ' + baseRate.toFixed(0) + ' ₽';
 
   // (прямая + обратная × возврат%) / выкуп%
   const totalPerSold = buyoutRate > 0
@@ -1482,8 +1507,8 @@ function calcOzonLog() {
     ? '+' + fmt(nonlocalAmt) + ' ₽ (' + nonlocalPct + '% × ' + fmt(itemPrice) + ' ₽ цены)'
     : '0 ₽';
   document.getElementById('oz-lr-lastmile').textContent = fmt(lastmile) + ' ₽';
-  document.getElementById('oz-lr-return').textContent   =
-    '(' + fmt(directPerShipment) + ' + ' + fmt(returnPerShipment) + ' × ' + (returnRate*100).toFixed(0) + '%) / ' + buyout + '% = ' + fmt(totalPerSold) + ' ₽';
+  document.getElementById('oz-lr-return').textContent =
+    fmt(returnPerShipment) + ' × ' + (returnRate*100).toFixed(0) + '% ÷ ' + buyout + '% = ' + fmt(returnPerShipment * returnRate / buyoutRate) + ' ₽';
   document.getElementById('oz-lr-total').textContent    = fmt(totalPerSold) + ' ₽';
 
   document.getElementById('oz-apply-log-btn').dataset.direct    = directPerShipment;
@@ -1605,6 +1630,11 @@ function applyOzonLog() {
         <label>Наценка за нелокальность</label>
         <div class="inp-wrap"><input type="number" id="oz-l-nonlocal" value="0" min="0" max="12" step="1" oninput="calcOzonLog()"><span class="unit">%</span></div>
         <div class="commission-auto">% от цены товара (0%, 8%, 12%)</div>
+      </div>
+      <div class="field">
+        <label>Обратная логистика</label>
+        <div class="inp-wrap"><input type="number" id="oz-l-return-cost" value="" min="0" placeholder="= тариф" oninput="calcOzonLog()"><span class="unit">₽</span></div>
+        <div class="commission-auto" id="oz-l-return-hint">по умолчанию = тариф доставки</div>
       </div>
     </div>
     <div class="modal-grid3" style="margin-top:8px">
