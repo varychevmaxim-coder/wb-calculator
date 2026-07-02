@@ -535,6 +535,10 @@ function getValues() {
   v.name = document.getElementById('product-name').value.trim();
   v.article = document.getElementById('article').value.trim();
   v.category = catSearch.value.trim();
+  // Габариты из модалки логистики
+  v.dimL = +document.getElementById('l-length').value || 0;
+  v.dimW = +document.getElementById('l-width').value || 0;
+  v.dimH = +document.getElementById('l-height').value || 0;
   return v;
 }
 
@@ -857,6 +861,9 @@ function renderHistory() {
 function loadFromHistoryEntry(e) {
   const v = e.values;
   activeId = e.id; wbActiveId = e.id;
+  if (v.dimL) document.getElementById('l-length').value = v.dimL;
+  if (v.dimW) document.getElementById('l-width').value = v.dimW;
+  if (v.dimH) document.getElementById('l-height').value = v.dimH;
   document.getElementById('product-name').value = v.name || '';
   document.getElementById('article').value = v.article || '';
   document.getElementById('cat-search').value = v.category || '';
@@ -885,6 +892,9 @@ function shareCalc() {
   if (v.article) params.set('article', v.article);
   if (v.category) params.set('category', v.category);
   FIELDS.forEach(k => { if (v[k]) params.set(k, v[k]); });
+  if (v.dimL) params.set('dimL', v.dimL);
+  if (v.dimW) params.set('dimW', v.dimW);
+  if (v.dimH) params.set('dimH', v.dimH);
   const url = window.location.origin + window.location.pathname + '?' + params.toString();
   navigator.clipboard.writeText(url).then(() => showToast('Ссылка скопирована!')).catch(() => prompt('Скопируйте:', url));
 }
@@ -1076,6 +1086,11 @@ try {
       if (found) { document.getElementById('commission-auto').textContent = found[1] + ' — ' + found[2] + '%'; }
     }
     FIELDS.forEach(k => { const val = params.get(k); if (val) { const el = document.getElementById(k); if (el) el.value = val; } });
+    // Восстановление габаритов в модалку логистики
+    ['dimL','dimW','dimH'].forEach((p, i) => {
+      const val = params.get(p);
+      if (val) { const el = document.getElementById(['l-length','l-width','l-height'][i]); if (el) el.value = val; }
+    });
   }
 } catch(e) {}
 
@@ -1248,6 +1263,9 @@ function getOzonValues() {
     cpo:        +document.getElementById('oz-cpo').value || 0,
     cpoRub:     +document.getElementById('oz-cpo-rub').value || 0,
     tax:        +document.getElementById('oz-tax').value || 0,
+    dimL:       +document.getElementById('oz-l-length').value || 0,
+    dimW:       +document.getElementById('oz-l-width').value || 0,
+    dimH:       +document.getElementById('oz-l-height').value || 0,
   };
 }
 
@@ -1486,6 +1504,9 @@ function saveOzonCalc() {
 function loadOzonFromHistory(e) {
   const v = e.values;
   activeId = e.id; ozActiveId = e.id;
+  if (v.dimL) document.getElementById('oz-l-length').value = v.dimL;
+  if (v.dimW) document.getElementById('oz-l-width').value = v.dimW;
+  if (v.dimH) document.getElementById('oz-l-height').value = v.dimH;
   document.getElementById('oz-article').value = v.article || '';
   document.getElementById('oz-name').value = v.name || '';
   document.getElementById('oz-cat-search').value = v.category || '';
