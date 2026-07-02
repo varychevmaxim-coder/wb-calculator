@@ -689,10 +689,23 @@ function applyOzonTargetPrice(price) {
 // ---- History ----
 function saveWBCalc() {
   const v = getValues(); const r = compute(v);
-  const id = Date.now();
   const label = v.name || (v.article ? 'Арт. ' + v.article : v.category || 'Расчёт');
   const lData = logisticsData[activeId || 'default'] || {};
-  history.unshift({ id, label, article: v.article, margin: r.margin, roi: r.roi, values: v, category: v.category, logisticsData: lData,
+
+  // Обновляем существующую WB-запись, если активна
+  const existing = history.find(h => h.id === activeId && h.market !== 'ozon');
+  if (existing) {
+    existing.label = label; existing.article = v.article;
+    existing.margin = r.margin; existing.roi = r.roi;
+    existing.values = v; existing.category = v.category; existing.logisticsData = lData;
+    existing.ts = new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+    saveToStorage(); renderHistory();
+    showToast('Обновлено: ' + label);
+    return;
+  }
+
+  const id = Date.now();
+  history.unshift({ id, label, article: v.article, margin: r.margin, roi: r.roi, values: v, category: v.category, logisticsData: lData, market: 'wb',
     ts: new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'}) });
   activeId = id; saveToStorage(); renderHistory();
   showToast('Сохранено: ' + label);
@@ -769,16 +782,16 @@ function renderHistory() {
       // Click on WB badge → load WB
       div.querySelector('[data-mkt="wb"]').addEventListener('click', ev => {
         ev.stopPropagation();
-        activeId = wbEntry.id;
         if (activeMarket !== 'wb') switchMarket('wb');
+        activeId = wbEntry.id; wbActiveId = wbEntry.id;
         loadFromHistoryEntry(wbEntry);
         renderHistory();
       });
       // Click on Ozon badge → load Ozon
       div.querySelector('[data-mkt="ozon"]').addEventListener('click', ev => {
         ev.stopPropagation();
-        activeId = ozEntry.id;
         if (activeMarket !== 'ozon') switchMarket('ozon');
+        activeId = ozEntry.id; ozActiveId = ozEntry.id;
         loadOzonFromHistory(ozEntry);
         renderHistory();
       });
@@ -786,10 +799,10 @@ function renderHistory() {
       div.addEventListener('click', ev => {
         if (ev.target.classList.contains('del-btn') || ev.target.dataset.mkt) return;
         if (activeMarket === 'ozon') {
-          activeId = ozEntry.id;
+          activeId = ozEntry.id; ozActiveId = ozEntry.id;
           loadOzonFromHistory(ozEntry);
         } else {
-          activeId = wbEntry.id;
+          activeId = wbEntry.id; wbActiveId = wbEntry.id;
           loadFromHistoryEntry(wbEntry);
         }
         renderHistory();
@@ -812,12 +825,13 @@ function renderHistory() {
     div.innerHTML = '<div class="hi-row"><div class="hi-name">' + badge + e.label + '</div><button class="del-btn" data-id="' + e.id + '">✕</button></div><div class="hi-meta">' + (e.article ? 'Арт. ' + e.article + ' · ' : '') + e.ts + '</div><div class="hi-margin ' + (e.margin >= 0 ? 'green' : 'red') + '">' + fmt(e.margin) + ' ₽ · ROI ' + (e.roi||0).toFixed(1) + '%</div>';
     div.addEventListener('click', ev => {
       if (ev.target.classList.contains('del-btn')) return;
-      activeId = e.id;
       if (e.market === 'ozon') {
         if (activeMarket !== 'ozon') switchMarket('ozon');
+        activeId = e.id; ozActiveId = e.id;
         loadOzonFromHistory(e);
       } else {
         if (activeMarket !== 'wb') switchMarket('wb');
+        activeId = e.id; wbActiveId = e.id;
         loadFromHistoryEntry(e);
       }
       renderHistory();
@@ -908,6 +922,17 @@ function exportCSV() {
 }
 
 function resetAll() {
+  if (activeMarket === 'ozon') {
+    ['oz-article','oz-name','oz-cat-search','oz-price','oz-discount','oz-commission','oz-buyout','oz-cogs','oz-logistics','oz-return-log','oz-storage','oz-cpo','oz-cpo-rub','oz-tax','oz-target-roi'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    document.getElementById('oz-acquiring').value = '1.5';
+    document.getElementById('oz-commission-auto').textContent = '';
+    document.getElementById('oz-logistics-applied').textContent = '';
+    ozActiveId = null; activeId = null;
+    renderHistory(); calcOzon();
+    return;
+  }
   document.getElementById('product-name').value = '';
   document.getElementById('article').value = '';
   catSearch.value = '';
@@ -915,7 +940,7 @@ function resetAll() {
   document.getElementById('commission-auto').textContent = '';
   document.getElementById('logistics-applied').textContent = '';
   FIELDS.forEach(k => { const el = document.getElementById(k); if (el) el.value = ''; });
-  activeId = null; renderHistory(); calc();
+  wbActiveId = null; activeId = null; renderHistory(); calc();
 }
 
 // ---- Logistics Modal ----
@@ -1089,8 +1114,18 @@ function enterCalc() {
 let activeMarket = 'wb';
 let ozonDrrMode = 'pct';
 
+let wbActiveId = null;
+let ozActiveId = null;
+
 function switchMarket(market) {
+  // Save current activeId to its market slot before switching
+  if (activeMarket === 'wb') wbActiveId = activeId;
+  else if (activeMarket === 'ozon') ozActiveId = activeId;
+
   activeMarket = market;
+  // Restore the activeId for the market we're switching to
+  activeId = market === 'wb' ? wbActiveId : ozActiveId;
+
   document.getElementById('tab-wb').classList.toggle('active', market === 'wb');
   document.getElementById('tab-ozon').classList.toggle('active', market === 'ozon');
   document.getElementById('wb-section').classList.toggle('hidden', market !== 'wb');
@@ -1383,8 +1418,21 @@ function saveCalc() {
 function saveOzonCalc() {
   const v = getOzonValues();
   const r = computeOzon(v);
-  const id = Date.now();
   const label = v.name || (v.article ? 'Арт. ' + v.article : v.category || 'Расчёт');
+
+  // Обновляем существующую Ozon-запись, если активна
+  const existing = history.find(h => h.id === activeId && h.market === 'ozon');
+  if (existing) {
+    existing.label = label; existing.article = v.article;
+    existing.margin = r.margin; existing.roi = r.roi;
+    existing.values = {...v, scheme: ozScheme}; existing.category = v.category;
+    existing.ts = new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+    saveToStorage(); renderHistory();
+    showToast('Обновлено (Ozon): ' + label);
+    return;
+  }
+
+  const id = Date.now();
   history.unshift({
     id, label, article: v.article, margin: r.margin, roi: r.roi,
     values: {...v, scheme: ozScheme}, category: v.category, market: 'ozon',
