@@ -719,12 +719,20 @@ function renderHistory() {
   const q = (document.getElementById('history-search')?.value || '').trim().toLowerCase();
 
   // Group by article: find pairs where same article has both WB + Ozon
-  const byArticle = {};
+  // Count entries per article per market — only pair when exactly 1 WB + 1 Ozon
+  const artGroups = {};
   history.forEach(e => {
     const key = (e.article || '').trim();
-    if (key) {
-      if (!byArticle[key]) byArticle[key] = {};
-      byArticle[key][e.market === 'ozon' ? 'ozon' : 'wb'] = e;
+    if (!key) return;
+    if (!artGroups[key]) artGroups[key] = { wb: [], ozon: [] };
+    artGroups[key][e.market === 'ozon' ? 'ozon' : 'wb'].push(e);
+  });
+  // byArticle holds pairs only when there's exactly one of each market
+  const byArticle = {};
+  Object.keys(artGroups).forEach(key => {
+    const g = artGroups[key];
+    if (g.wb.length === 1 && g.ozon.length === 1) {
+      byArticle[key] = { wb: g.wb[0], ozon: g.ozon[0] };
     }
   });
 
