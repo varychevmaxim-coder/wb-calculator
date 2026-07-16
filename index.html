@@ -415,16 +415,16 @@
     </div>
 
     <div class="competitor-box" id="oz-competitor-box" style="display:none">
-      <div class="roi-target-title">Цена конкурента → сколько заработаю</div>
+      <div class="roi-target-title">Цена конкурента (после соинвеста) → сколько заработаю</div>
       <div class="roi-target-row">
-        <label>Цена конкурента</label>
+        <label>Цена на витрине</label>
         <div class="inp-wrap" style="width:130px"><input type="number" id="oz-competitor-price" value="" min="0" placeholder="0" oninput="calcOzon()"><span class="unit">₽</span></div>
       </div>
       <div class="competitor-cards" id="oz-competitor-cards" style="display:none">
         <div class="comp-card"><div class="comp-card-label">Маржа на 1 ед</div><div class="comp-card-val" id="oz-comp-margin">—</div></div>
         <div class="comp-card"><div class="comp-card-label">ROI</div><div class="comp-card-val" id="oz-comp-roi">—</div></div>
         <div class="comp-card"><div class="comp-card-label">Маржинальность</div><div class="comp-card-val" id="oz-comp-marg-pct">—</div></div>
-        <div class="comp-card"><div class="comp-card-label">Цена с соинвестом</div><div class="comp-card-val" id="oz-comp-price-buyer">—</div></div>
+        <div class="comp-card"><div class="comp-card-label">Цена на витрине</div><div class="comp-card-val" id="oz-comp-price-buyer">—</div></div>
       </div>
     </div>
 
@@ -446,16 +446,16 @@
     </div>
 
     <div class="competitor-box" id="competitor-box">
-      <div class="roi-target-title">Цена конкурента → сколько заработаю</div>
+      <div class="roi-target-title">Цена конкурента (после СПП) → сколько заработаю</div>
       <div class="roi-target-row">
-        <label>Цена конкурента</label>
+        <label>Цена на витрине</label>
         <div class="inp-wrap" style="width:130px"><input type="number" id="competitor-price" value="" min="0" placeholder="0" oninput="calc()"><span class="unit">₽</span></div>
       </div>
       <div class="competitor-cards" id="competitor-cards" style="display:none">
         <div class="comp-card"><div class="comp-card-label">Маржа на 1 ед</div><div class="comp-card-val" id="comp-margin">—</div></div>
         <div class="comp-card"><div class="comp-card-label">ROI</div><div class="comp-card-val" id="comp-roi">—</div></div>
         <div class="comp-card"><div class="comp-card-label">Маржинальность</div><div class="comp-card-val" id="comp-marg-pct">—</div></div>
-        <div class="comp-card"><div class="comp-card-label">Цена после СПП</div><div class="comp-card-val" id="comp-price-spp">—</div></div>
+        <div class="comp-card"><div class="comp-card-label">Цена на сайте</div><div class="comp-card-val" id="comp-price-spp">—</div></div>
       </div>
     </div>
 
@@ -678,13 +678,17 @@ function calcCompetitor(v, r) {
   const compPrice = +document.getElementById('competitor-price').value || 0;
   if (!compPrice) { cards.style.display = 'none'; return; }
   cards.style.display = 'grid';
-  const cr = compute({...v, price: compPrice});
+  // Цена конкурента — это цена ПОСЛЕ СПП (что платит покупатель).
+  // Восстанавливаем цену на сайте: priceOnSite = compPrice / (1 - spp/100)
+  const sppK = 1 - (v.spp || 0) / 100;
+  const priceOnSite = sppK > 0 ? compPrice / sppK : compPrice;
+  const cr = compute({...v, price: priceOnSite});
   const cls = cr.margin >= 0 ? 'green' : 'red';
   const set = (id, txt, c) => { const el = document.getElementById(id); el.textContent = txt; el.className = 'comp-card-val' + (c ? ' ' + c : ''); };
   set('comp-margin', fmt(cr.margin) + ' ₽', cls);
   set('comp-roi', cr.roi.toFixed(1) + '%', cls);
   set('comp-marg-pct', cr.marginPct.toFixed(1) + '%', cls);
-  set('comp-price-spp', fmt(cr.priceSPP) + ' ₽', '');
+  set('comp-price-spp', fmt(priceOnSite) + ' ₽', '');
 }
 
 function calcTargetPrice() {
@@ -1427,13 +1431,17 @@ function calcOzonCompetitor(v, r) {
   const compPrice = +document.getElementById('oz-competitor-price').value || 0;
   if (!compPrice) { cards.style.display = 'none'; return; }
   cards.style.display = 'grid';
-  const cr = computeOzon({...v, price: compPrice});
+  // Цена конкурента — это цена ПОСЛЕ соинвеста (что платит покупатель).
+  // Восстанавливаем цену на витрине: priceShowcase = compPrice / (1 - discount/100)
+  const discK = 1 - (v.discount || 0) / 100;
+  const priceShowcase = discK > 0 ? compPrice / discK : compPrice;
+  const cr = computeOzon({...v, price: priceShowcase});
   const cls = cr.margin >= 0 ? 'green' : 'red';
   const set = (id, txt, c) => { const el = document.getElementById(id); el.textContent = txt; el.className = 'comp-card-val' + (c ? ' ' + c : ''); };
   set('oz-comp-margin', fmt(cr.margin) + ' ₽', cls);
   set('oz-comp-roi', cr.roi.toFixed(1) + '%', cls);
   set('oz-comp-marg-pct', cr.marginPct.toFixed(1) + '%', cls);
-  set('oz-comp-price-buyer', fmt(cr.priceBuyer) + ' ₽', '');
+  set('oz-comp-price-buyer', fmt(priceShowcase) + ' ₽', '');
 }
 
 function calcOzonTargetPrice() {
