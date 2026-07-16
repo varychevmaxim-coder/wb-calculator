@@ -84,6 +84,14 @@
     .toggle-btn { height: 26px; padding: 0 10px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); background: transparent; color: var(--text-secondary); font-size: 11px; font-family: inherit; cursor: pointer; transition: all .15s; white-space: nowrap; }
     .toggle-btn.active { background: var(--green); border-color: var(--green); color: white; }
     .roi-target-box { background: var(--bg-secondary); border-radius: var(--radius); padding: 10px 12px; margin-top: 16px; }
+    .competitor-box { background: var(--bg-secondary); border-radius: var(--radius); padding: 10px 12px; margin-top: 12px; }
+    .competitor-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+    .comp-card { background: var(--bg); border-radius: var(--radius); padding: 8px 10px; }
+    .comp-card-label { font-size: 10px; color: var(--text-tertiary); margin-bottom: 3px; }
+    .comp-card-val { font-size: 15px; font-weight: 700; color: var(--text); }
+    .comp-card-val.green { color: var(--green); }
+    .comp-card-val.red { color: var(--red); }
+    @media (max-width: 700px) { .competitor-cards { grid-template-columns: repeat(2, 1fr); } }
     .roi-target-title { font-size: 10px; font-weight: 500; color: var(--text-tertiary); letter-spacing: .07em; text-transform: uppercase; margin-bottom: 8px; }
     .roi-target-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .roi-target-row label { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
@@ -234,6 +242,7 @@
           <div class="field"><label>СПП</label><div class="inp-wrap"><input type="number" id="spp" value="" min="0" max="100" step="0.5" placeholder="0"><span class="unit">%</span></div></div>
         </div>
 
+
         <div class="section-title section-gap">Расходы</div>
         <div style="font-size:10px;color:var(--green);margin-bottom:8px;margin-top:-8px">✓ Справочник комиссий обновлён — ставки актуальны с 07.07.2026</div>
         <div class="grid2" style="margin-bottom:12px">
@@ -298,6 +307,7 @@
           <div class="field"><label>Цена на витрине</label><div class="inp-wrap"><input type="number" id="oz-price" value="" min="0" placeholder="0" oninput="calcOzon()"><span class="unit">₽</span></div></div>
           <div class="field"><label>Соинвест Ozon</label><div class="inp-wrap"><input type="number" id="oz-discount" value="" min="0" max="99" placeholder="0" oninput="calcOzon()"><span class="unit">%</span></div><div class="commission-auto" id="oz-price-hint"></div></div>
         </div>
+
 
         <div class="section-title section-gap">Расходы</div>
         <div class="field cat-field" style="margin-bottom:4px">
@@ -404,6 +414,20 @@
       </div>
     </div>
 
+    <div class="competitor-box" id="oz-competitor-box" style="display:none">
+      <div class="roi-target-title">Цена конкурента → сколько заработаю</div>
+      <div class="roi-target-row">
+        <label>Цена конкурента</label>
+        <div class="inp-wrap" style="width:130px"><input type="number" id="oz-competitor-price" value="" min="0" placeholder="0" oninput="calcOzon()"><span class="unit">₽</span></div>
+      </div>
+      <div class="competitor-cards" id="oz-competitor-cards" style="display:none">
+        <div class="comp-card"><div class="comp-card-label">Маржа на 1 ед</div><div class="comp-card-val" id="oz-comp-margin">—</div></div>
+        <div class="comp-card"><div class="comp-card-label">ROI</div><div class="comp-card-val" id="oz-comp-roi">—</div></div>
+        <div class="comp-card"><div class="comp-card-label">Маржинальность</div><div class="comp-card-val" id="oz-comp-marg-pct">—</div></div>
+        <div class="comp-card"><div class="comp-card-label">Цена с соинвестом</div><div class="comp-card-val" id="oz-comp-price-buyer">—</div></div>
+      </div>
+    </div>
+
     <div class="results-cards-row">
       <div class="card"><div class="clabel">Маржа на 1 ед</div><div class="cval" id="out-margin">—</div></div>
       <div class="card"><div class="clabel">ROI</div><div class="cval" id="out-roi">—</div></div>
@@ -418,6 +442,20 @@
         <label>Целевой ROI</label>
         <div class="inp-wrap" style="width:100px"><input type="number" id="target-roi" value="" min="0" step="1" placeholder="50"><span class="unit">%</span></div>
         <div class="roi-target-result" id="target-price-result">введите ROI →</div>
+      </div>
+    </div>
+
+    <div class="competitor-box" id="competitor-box">
+      <div class="roi-target-title">Цена конкурента → сколько заработаю</div>
+      <div class="roi-target-row">
+        <label>Цена конкурента</label>
+        <div class="inp-wrap" style="width:130px"><input type="number" id="competitor-price" value="" min="0" placeholder="0" oninput="calc()"><span class="unit">₽</span></div>
+      </div>
+      <div class="competitor-cards" id="competitor-cards" style="display:none">
+        <div class="comp-card"><div class="comp-card-label">Маржа на 1 ед</div><div class="comp-card-val" id="comp-margin">—</div></div>
+        <div class="comp-card"><div class="comp-card-label">ROI</div><div class="comp-card-val" id="comp-roi">—</div></div>
+        <div class="comp-card"><div class="comp-card-label">Маржинальность</div><div class="comp-card-val" id="comp-marg-pct">—</div></div>
+        <div class="comp-card"><div class="comp-card-label">Цена после СПП</div><div class="comp-card-val" id="comp-price-spp">—</div></div>
       </div>
     </div>
 
@@ -632,6 +670,21 @@ function calc() {
   document.getElementById('out-commission').textContent = v.commission > 0 ? 'комиссия ' + fmt(r.commission) + ' ₽' : '';
   updateDrrHint();
   calcTargetPrice();
+  calcCompetitor(v, r);
+}
+
+function calcCompetitor(v, r) {
+  const cards = document.getElementById('competitor-cards');
+  const compPrice = +document.getElementById('competitor-price').value || 0;
+  if (!compPrice) { cards.style.display = 'none'; return; }
+  cards.style.display = 'grid';
+  const cr = compute({...v, price: compPrice});
+  const cls = cr.margin >= 0 ? 'green' : 'red';
+  const set = (id, txt, c) => { const el = document.getElementById(id); el.textContent = txt; el.className = 'comp-card-val' + (c ? ' ' + c : ''); };
+  set('comp-margin', fmt(cr.margin) + ' ₽', cls);
+  set('comp-roi', cr.roi.toFixed(1) + '%', cls);
+  set('comp-marg-pct', cr.marginPct.toFixed(1) + '%', cls);
+  set('comp-price-spp', fmt(cr.priceSPP) + ' ₽', '');
 }
 
 function calcTargetPrice() {
@@ -1200,6 +1253,10 @@ function switchMarket(market) {
   else calc();
   const ozBtn = document.getElementById('oz-calc-btn');
   if (ozBtn) ozBtn.style.display = market === 'ozon' ? 'inline-flex' : 'none';
+  const wbComp = document.getElementById('competitor-box');
+  const ozComp = document.getElementById('oz-competitor-box');
+  if (wbComp) wbComp.style.display = market === 'wb' ? 'block' : 'none';
+  if (ozComp) ozComp.style.display = market === 'ozon' ? 'block' : 'none';
   updateActionButtons();
 }
 
@@ -1362,6 +1419,21 @@ function calcOzon() {
   document.getElementById('oz-out-commission').textContent  = v.commission > 0 ? 'комиссия ' + fmt(r.commission) + ' ₽' : '';
 
   calcOzonTargetPrice();
+  calcOzonCompetitor(v, r);
+}
+
+function calcOzonCompetitor(v, r) {
+  const cards = document.getElementById('oz-competitor-cards');
+  const compPrice = +document.getElementById('oz-competitor-price').value || 0;
+  if (!compPrice) { cards.style.display = 'none'; return; }
+  cards.style.display = 'grid';
+  const cr = computeOzon({...v, price: compPrice});
+  const cls = cr.margin >= 0 ? 'green' : 'red';
+  const set = (id, txt, c) => { const el = document.getElementById(id); el.textContent = txt; el.className = 'comp-card-val' + (c ? ' ' + c : ''); };
+  set('oz-comp-margin', fmt(cr.margin) + ' ₽', cls);
+  set('oz-comp-roi', cr.roi.toFixed(1) + '%', cls);
+  set('oz-comp-marg-pct', cr.marginPct.toFixed(1) + '%', cls);
+  set('oz-comp-price-buyer', fmt(cr.priceBuyer) + ' ₽', '');
 }
 
 function calcOzonTargetPrice() {
