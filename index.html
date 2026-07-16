@@ -147,7 +147,7 @@
     .card .csub { font-size: 11px; color: var(--text-tertiary); margin-top: 3px; }
     /* Actions */
     .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
-    button.action-btn { height: 32px; padding: 0 14px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); background: transparent; color: var(--text-secondary); font-size: 12px; font-family: inherit; cursor: pointer; transition: background .12s; }
+    button.action-btn { display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0 14px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); background: transparent; color: var(--text-secondary); font-size: 12px; font-family: inherit; cursor: pointer; transition: background .12s; }
     button.action-btn:hover { background: var(--bg-secondary); }
     button.action-btn.primary { border-color: var(--green); color: var(--green); }
     button.action-btn.primary:hover { background: var(--green-bg); }
@@ -1136,43 +1136,7 @@ function applyLogistics() {
   showToast('Логистика применена: ' + fmt(finalLogistics) + ' ₽');
 }
 
-// ---- Init ----
-try {
-  const params = new URLSearchParams(window.location.search);
-  // Ozon shared calc
-  if (params.get('mp') === 'ozon') {
-    switchMarket('ozon');
-    const ozMap = {
-      'oz-name':'oz-name','oz-article':'oz-article','oz-cat':'oz-cat-search',
-      'oz-price':'oz-price','oz-discount':'oz-discount','oz-commission':'oz-commission',
-      'oz-acquiring':'oz-acquiring','oz-buyout':'oz-buyout','oz-cogs':'oz-cogs',
-      'oz-logistics':'oz-logistics','oz-return':'oz-return-log','oz-storage':'oz-storage',
-      'oz-cpo':'oz-cpo','oz-cpo-rub':'oz-cpo-rub','oz-tax':'oz-tax',
-      'dimL':'oz-l-length','dimW':'oz-l-width','dimH':'oz-l-height'
-    };
-    Object.keys(ozMap).forEach(p => {
-      const val = params.get(p);
-      if (val) { const el = document.getElementById(ozMap[p]); if (el) el.value = val; }
-    });
-    if (params.get('scheme')) setOzScheme(params.get('scheme'));
-    calcOzon();
-  } else if (params.has('price')) {
-    document.getElementById('product-name').value = params.get('name') || '';
-    document.getElementById('article').value = params.get('article') || '';
-    const cat = params.get('category');
-    if (cat) {
-      catSearch.value = cat;
-      const found = COMMISSIONS.find(c => c[0] === cat);
-      if (found) { document.getElementById('commission-auto').textContent = found[1] + ' — ' + found[2] + '%'; }
-    }
-    FIELDS.forEach(k => { const val = params.get(k); if (val) { const el = document.getElementById(k); if (el) el.value = val; } });
-    // Восстановление габаритов в модалку логистики
-    ['dimL','dimW','dimH'].forEach((p, i) => {
-      const val = params.get(p);
-      if (val) { const el = document.getElementById(['l-length','l-width','l-height'][i]); if (el) el.value = val; }
-    });
-  }
-} catch(e) {}
+
 
 // Logistics modal input listeners
 ['l-length','l-width','l-height','l-base1','l-baseX','l-return','l-coef','l-local'].forEach(id => {
@@ -1610,7 +1574,7 @@ function updateActionButtons() {
   const hasEntry = curId && history.some(h => h.id === curId);
   const updateBtn = document.getElementById('update-btn');
   const saveBtn = document.getElementById('save-btn');
-  if (updateBtn) updateBtn.style.display = hasEntry ? 'inline-flex' : 'none';
+  if (updateBtn) updateBtn.style.display = hasEntry ? '' : 'none';
   if (saveBtn) saveBtn.textContent = hasEntry ? 'Сохранить как новый' : 'Сохранить';
 }
 
@@ -1793,6 +1757,49 @@ function applyOzonLog() {
 
 // ============ END OZON ============
 
+
+// ---- Init (moved to end after all declarations) ----
+// ---- Init ----
+try {
+  const params = new URLSearchParams(window.location.search);
+  // Ozon shared calc
+  if (params.get('mp') === 'ozon') {
+    switchMarket('ozon');
+    const ozMap = {
+      'oz-name':'oz-name','oz-article':'oz-article','oz-cat':'oz-cat-search',
+      'oz-price':'oz-price','oz-discount':'oz-discount','oz-commission':'oz-commission',
+      'oz-acquiring':'oz-acquiring','oz-buyout':'oz-buyout','oz-cogs':'oz-cogs',
+      'oz-logistics':'oz-logistics','oz-return':'oz-return-log','oz-storage':'oz-storage',
+      'oz-cpo':'oz-cpo','oz-cpo-rub':'oz-cpo-rub','oz-tax':'oz-tax',
+      'dimL':'oz-l-length','dimW':'oz-l-width','dimH':'oz-l-height'
+    };
+    // Сначала scheme (он может перезаписать комиссию по категории)
+    if (params.get('scheme')) { ozScheme = params.get('scheme'); }
+    Object.keys(ozMap).forEach(p => {
+      const val = params.get(p);
+      if (val) { const el = document.getElementById(ozMap[p]); if (el) el.value = val; }
+    });
+    // Обновляем визуал кнопок схемы без перезаписи комиссии
+    document.getElementById('oz-scheme-fbo').classList.toggle('active', ozScheme === 'fbo');
+    document.getElementById('oz-scheme-fbs').classList.toggle('active', ozScheme === 'fbs');
+    calcOzon();
+  } else if (params.has('price')) {
+    document.getElementById('product-name').value = params.get('name') || '';
+    document.getElementById('article').value = params.get('article') || '';
+    const cat = params.get('category');
+    if (cat) {
+      catSearch.value = cat;
+      const found = COMMISSIONS.find(c => c[0] === cat);
+      if (found) { document.getElementById('commission-auto').textContent = found[1] + ' — ' + found[2] + '%'; }
+    }
+    FIELDS.forEach(k => { const val = params.get(k); if (val) { const el = document.getElementById(k); if (el) el.value = val; } });
+    // Восстановление габаритов в модалку логистики
+    ['dimL','dimW','dimH'].forEach((p, i) => {
+      const val = params.get(p);
+      if (val) { const el = document.getElementById(['l-length','l-width','l-height'][i]); if (el) el.value = val; }
+    });
+  }
+} catch(e) {}
 </script>
 
 <!-- Splash Screen -->
