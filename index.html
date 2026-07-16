@@ -422,7 +422,8 @@
     </div>
 
     <div class="actions">
-      <button class="action-btn primary" onclick="saveCalc()">Сохранить</button>
+      <button class="action-btn primary" id="update-btn" onclick="updateCalc()" style="display:none">Обновить</button>
+      <button class="action-btn primary" id="save-btn" onclick="saveCalc()">Сохранить</button>
       <button class="action-btn" onclick="shareCalc()">Поделиться</button>
       <button class="action-btn" onclick="exportCSV()">Экспорт CSV</button>
       <a id="oz-calc-btn" href="https://calculator.ozon.ru" target="_blank" class="action-btn" style="display:none;text-decoration:none">Калькулятор Ozon →</a>
@@ -455,7 +456,6 @@
     <div class="modal-grid3">
       <div class="field"><label>Доп. коэф. склада, %</label><div class="inp-wrap"><input type="number" id="l-coef" placeholder="150" min="0"><span class="unit">%</span></div></div>
       <div class="field"><label>Индекс локализации</label><div class="inp-wrap"><input type="number" id="l-local" placeholder="1.07" min="0" step="0.01"></div></div>
-      <div class="field"><label>ИРП, %</label><div class="inp-wrap"><input type="number" id="l-irp" placeholder="0.48" min="0" step="0.01"><span class="unit">%</span></div></div>
     </div>
     <div class="modal-divider"></div>
     <div class="modal-result" id="l-result" style="display:none">
@@ -695,23 +695,10 @@ function saveWBCalc() {
   const v = getValues(); const r = compute(v);
   const label = v.name || (v.article ? 'Арт. ' + v.article : v.category || 'Расчёт');
   const lData = logisticsData[activeId || 'default'] || {};
-
-  // Обновляем существующую WB-запись, если активна
-  const existing = history.find(h => h.id === activeId && h.market !== 'ozon');
-  if (existing) {
-    existing.label = label; existing.article = v.article;
-    existing.margin = r.margin; existing.roi = r.roi;
-    existing.values = v; existing.category = v.category; existing.logisticsData = lData;
-    existing.ts = new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
-    saveToStorage(); renderHistory();
-    showToast('Обновлено: ' + label);
-    return;
-  }
-
   const id = Date.now();
   history.unshift({ id, label, article: v.article, margin: r.margin, roi: r.roi, values: v, category: v.category, logisticsData: lData, market: 'wb',
     ts: new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'}) });
-  activeId = id; saveToStorage(); renderHistory();
+  activeId = id; wbActiveId = id; saveToStorage(); renderHistory(); updateActionButtons();
   showToast('Сохранено: ' + label);
 }
 
@@ -880,14 +867,16 @@ function loadFromHistoryEntry(e) {
   document.getElementById('cpo-rub').value = v.cpoRub || '';
   document.getElementById('tax').value = v.tax || '';
   if (v.drrMode) setDrrMode(v.drrMode);
-  calc(); renderHistory();
+  calc(); renderHistory(); updateActionButtons();
 }
 
 
 // ---- Share / Export / Reset ----
 function shareCalc() {
+  if (activeMarket === 'ozon') { shareOzonCalc(); return; }
   const v = getValues();
   const params = new URLSearchParams();
+  params.set('mp', 'wb');
   if (v.name) params.set('name', v.name);
   if (v.article) params.set('article', v.article);
   if (v.category) params.set('category', v.category);
@@ -895,6 +884,23 @@ function shareCalc() {
   if (v.dimL) params.set('dimL', v.dimL);
   if (v.dimW) params.set('dimW', v.dimW);
   if (v.dimH) params.set('dimH', v.dimH);
+  const url = window.location.origin + window.location.pathname + '?' + params.toString();
+  navigator.clipboard.writeText(url).then(() => showToast('Ссылка скопирована!')).catch(() => prompt('Скопируйте:', url));
+}
+
+function shareOzonCalc() {
+  const v = getOzonValues();
+  const params = new URLSearchParams();
+  params.set('mp', 'ozon');
+  const map = {
+    'oz-name': v.name, 'oz-article': v.article, 'oz-cat': v.category,
+    'oz-price': v.price, 'oz-discount': v.discount, 'oz-commission': v.commission,
+    'oz-acquiring': v.acquiring, 'oz-buyout': v.buyout, 'oz-cogs': v.cogs,
+    'oz-logistics': v.logistics, 'oz-return': v.returnLog, 'oz-storage': v.storage,
+    'oz-cpo': v.cpo, 'oz-cpo-rub': v.cpoRub, 'oz-tax': v.tax,
+    'dimL': v.dimL, 'dimW': v.dimW, 'dimH': v.dimH, 'scheme': ozScheme
+  };
+  Object.keys(map).forEach(k => { if (map[k]) params.set(k, map[k]); });
   const url = window.location.origin + window.location.pathname + '?' + params.toString();
   navigator.clipboard.writeText(url).then(() => showToast('Ссылка скопирована!')).catch(() => prompt('Скопируйте:', url));
 }
@@ -949,7 +955,7 @@ function resetAll() {
     document.getElementById('oz-commission-auto').textContent = '';
     document.getElementById('oz-logistics-applied').textContent = '';
     ozActiveId = null; activeId = null;
-    renderHistory(); calcOzon();
+    renderHistory(); calcOzon(); updateActionButtons();
     return;
   }
   document.getElementById('product-name').value = '';
@@ -959,13 +965,13 @@ function resetAll() {
   document.getElementById('commission-auto').textContent = '';
   document.getElementById('logistics-applied').textContent = '';
   FIELDS.forEach(k => { const el = document.getElementById(k); if (el) el.value = ''; });
-  wbActiveId = null; activeId = null; renderHistory(); calc();
+  wbActiveId = null; activeId = null; renderHistory(); calc(); updateActionButtons();
 }
 
 // ---- Logistics Modal ----
 function openLogisticsModal() {
   const saved = logisticsData[activeId || 'default'] || {};
-  ['l-length','l-width','l-height','l-base1','l-baseX','l-return','l-coef','l-local','l-irp'].forEach(id => {
+  ['l-length','l-width','l-height','l-base1','l-baseX','l-return','l-coef','l-local'].forEach(id => {
     const el = document.getElementById(id);
     if (el && saved[id] !== undefined) el.value = saved[id];
   });
@@ -1003,7 +1009,6 @@ function calcLogistics() {
   const baseX  = +document.getElementById('l-baseX').value || 14;
   const coef   = +document.getElementById('l-coef').value || 0;
   const local  = +document.getElementById('l-local').value || 1;
-  const irp    = +document.getElementById('l-irp').value || 0;
   const buyout = +document.getElementById('buyout').value || 0;
   const price  = +document.getElementById('price').value || 0;
 
@@ -1019,10 +1024,11 @@ function calcLogistics() {
   const baseLog = getBaseLogistics(vol, base1, baseX);
   const returnCostInput = document.getElementById('l-return').value;
   const returnCost = returnCostInput !== '' ? +returnCostInput : baseLog;
-  let baseCoef = baseLog;
-  if (coef > 0 || local !== 1 || irp > 0) {
-    baseCoef = baseLog * (coef / 100) * local + price * (irp / 100);
-  }
+  // coef — доп. коэффициент склада (надбавка %), local — индекс локализации
+  // Базовая логистика × (1 + coef%) × local
+  const coefMult = 1 + (coef / 100);
+  const localMult = local > 0 ? local : 1;
+  let baseCoef = baseLog * coefMult * localMult;
   let finalLogistics = baseCoef;
   if (buyout > 0 && buyout < 100) {
     const returnRate = (100 - buyout) / 100;
@@ -1047,7 +1053,6 @@ function applyLogistics() {
   const baseX  = +document.getElementById('l-baseX').value || 14;
   const coef   = +document.getElementById('l-coef').value || 0;
   const local  = +document.getElementById('l-local').value || 1;
-  const irp    = +document.getElementById('l-irp').value || 0;
   const buyout = +document.getElementById('buyout').value || 0;
   const price  = +document.getElementById('price').value || 0;
   const returnCostInput = document.getElementById('l-return').value;
@@ -1055,10 +1060,11 @@ function applyLogistics() {
   const vol = (length * width * height) / 1000;
   const baseLog = getBaseLogistics(vol, base1, baseX);
   const returnCost = returnCostInput !== '' ? +returnCostInput : baseLog;
-  let baseCoef = baseLog;
-  if (coef > 0 || local !== 1 || irp > 0) {
-    baseCoef = baseLog * (coef / 100) * local + price * (irp / 100);
-  }
+  // coef — доп. коэффициент склада (надбавка %), local — индекс локализации
+  // Базовая логистика × (1 + coef%) × local
+  const coefMult = 1 + (coef / 100);
+  const localMult = local > 0 ? local : 1;
+  let baseCoef = baseLog * coefMult * localMult;
   let finalLogistics = baseCoef;
   if (buyout > 0 && buyout < 100) {
     const returnRate = (100 - buyout) / 100;
@@ -1067,7 +1073,7 @@ function applyLogistics() {
 
   document.getElementById('logistics').value = Math.round(finalLogistics * 10) / 10;
   document.getElementById('logistics-applied').textContent = 'Рассчитано: ' + fmt(finalLogistics) + ' ₽';
-  logisticsData[activeId || 'default'] = { 'l-length': length, 'l-width': width, 'l-height': height, 'l-base1': base1, 'l-baseX': baseX, 'l-return': returnCostInput, 'l-coef': coef, 'l-local': local, 'l-irp': irp };
+  logisticsData[activeId || 'default'] = { 'l-length': length, 'l-width': width, 'l-height': height, 'l-base1': base1, 'l-baseX': baseX, 'l-return': returnCostInput, 'l-coef': coef, 'l-local': local };
   closeLogisticsModal();
   calc();
   showToast('Логистика применена: ' + fmt(finalLogistics) + ' ₽');
@@ -1076,7 +1082,24 @@ function applyLogistics() {
 // ---- Init ----
 try {
   const params = new URLSearchParams(window.location.search);
-  if (params.has('price')) {
+  // Ozon shared calc
+  if (params.get('mp') === 'ozon') {
+    switchMarket('ozon');
+    const ozMap = {
+      'oz-name':'oz-name','oz-article':'oz-article','oz-cat':'oz-cat-search',
+      'oz-price':'oz-price','oz-discount':'oz-discount','oz-commission':'oz-commission',
+      'oz-acquiring':'oz-acquiring','oz-buyout':'oz-buyout','oz-cogs':'oz-cogs',
+      'oz-logistics':'oz-logistics','oz-return':'oz-return-log','oz-storage':'oz-storage',
+      'oz-cpo':'oz-cpo','oz-cpo-rub':'oz-cpo-rub','oz-tax':'oz-tax',
+      'dimL':'oz-l-length','dimW':'oz-l-width','dimH':'oz-l-height'
+    };
+    Object.keys(ozMap).forEach(p => {
+      const val = params.get(p);
+      if (val) { const el = document.getElementById(ozMap[p]); if (el) el.value = val; }
+    });
+    if (params.get('scheme')) setOzScheme(params.get('scheme'));
+    calcOzon();
+  } else if (params.has('price')) {
     document.getElementById('product-name').value = params.get('name') || '';
     document.getElementById('article').value = params.get('article') || '';
     const cat = params.get('category');
@@ -1095,7 +1118,7 @@ try {
 } catch(e) {}
 
 // Logistics modal input listeners
-['l-length','l-width','l-height','l-base1','l-baseX','l-return','l-coef','l-local','l-irp'].forEach(id => {
+['l-length','l-width','l-height','l-base1','l-baseX','l-return','l-coef','l-local'].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.addEventListener('input', calcLogistics);
 });
@@ -1177,6 +1200,7 @@ function switchMarket(market) {
   else calc();
   const ozBtn = document.getElementById('oz-calc-btn');
   if (ozBtn) ozBtn.style.display = market === 'ozon' ? 'inline-flex' : 'none';
+  updateActionButtons();
 }
 
 // Синхронизирует общие поля из одного маркетплейса в другой (только пустые)
@@ -1465,7 +1489,7 @@ if (ozCatSearch) {
   ozCatSearch.addEventListener('blur', () => setTimeout(() => ozCatList.classList.remove('open'), 200));
 }
 
-// Unified saveCalc dispatcher
+// Unified saveCalc dispatcher — always creates NEW entry
 function saveCalc() {
   if (activeMarket === 'ozon') {
     saveOzonCalc();
@@ -1474,30 +1498,53 @@ function saveCalc() {
   }
 }
 
+// updateCalc — updates the currently active history entry in place
+function updateCalc() {
+  if (activeMarket === 'ozon') {
+    const v = getOzonValues(); const r = computeOzon(v);
+    const existing = history.find(h => h.id === activeId && h.market === 'ozon');
+    if (!existing) { saveOzonCalc(); return; }
+    existing.label = v.name || (v.article ? 'Арт. ' + v.article : v.category || 'Расчёт');
+    existing.article = v.article; existing.margin = r.margin; existing.roi = r.roi;
+    existing.values = {...v, scheme: ozScheme}; existing.category = v.category;
+    existing.ts = new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+    saveToStorage(); renderHistory();
+    showToast('Обновлено: ' + existing.label);
+  } else {
+    const v = getValues(); const r = compute(v);
+    const existing = history.find(h => h.id === activeId && h.market !== 'ozon');
+    if (!existing) { saveWBCalc(); return; }
+    existing.label = v.name || (v.article ? 'Арт. ' + v.article : v.category || 'Расчёт');
+    existing.article = v.article; existing.margin = r.margin; existing.roi = r.roi;
+    existing.values = v; existing.category = v.category;
+    existing.logisticsData = logisticsData[activeId || 'default'] || {};
+    existing.ts = new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+    saveToStorage(); renderHistory();
+    showToast('Обновлено: ' + existing.label);
+  }
+}
+
+// Show/hide "Обновить" button based on whether current market has an active entry
+function updateActionButtons() {
+  const curId = activeMarket === 'ozon' ? ozActiveId : wbActiveId;
+  const hasEntry = curId && history.some(h => h.id === curId);
+  const updateBtn = document.getElementById('update-btn');
+  const saveBtn = document.getElementById('save-btn');
+  if (updateBtn) updateBtn.style.display = hasEntry ? 'inline-flex' : 'none';
+  if (saveBtn) saveBtn.textContent = hasEntry ? 'Сохранить как новый' : 'Сохранить';
+}
+
 function saveOzonCalc() {
   const v = getOzonValues();
   const r = computeOzon(v);
   const label = v.name || (v.article ? 'Арт. ' + v.article : v.category || 'Расчёт');
-
-  // Обновляем существующую Ozon-запись, если активна
-  const existing = history.find(h => h.id === activeId && h.market === 'ozon');
-  if (existing) {
-    existing.label = label; existing.article = v.article;
-    existing.margin = r.margin; existing.roi = r.roi;
-    existing.values = {...v, scheme: ozScheme}; existing.category = v.category;
-    existing.ts = new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
-    saveToStorage(); renderHistory();
-    showToast('Обновлено (Ozon): ' + label);
-    return;
-  }
-
   const id = Date.now();
   history.unshift({
     id, label, article: v.article, margin: r.margin, roi: r.roi,
     values: {...v, scheme: ozScheme}, category: v.category, market: 'ozon',
     ts: new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'})
   });
-  activeId = id; saveToStorage(); renderHistory();
+  activeId = id; ozActiveId = id; saveToStorage(); renderHistory(); updateActionButtons();
   showToast('Сохранено (Ozon): ' + label);
 }
 
@@ -1523,7 +1570,7 @@ function loadOzonFromHistory(e) {
   document.getElementById('oz-cpo-rub').value = v.cpoRub || '';
   document.getElementById('oz-tax').value = v.tax || '';
   if (v.scheme) setOzScheme(v.scheme);
-  calcOzon();
+  calcOzon(); updateActionButtons();
 }
 
 
